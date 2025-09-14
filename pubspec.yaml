@@ -1,4 +1,4 @@
-name: app_bicocerto
+name: bico_certo
 description: "A new Flutter project."
 publish_to: 'none'
 version: 0.1.0
@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Armazenar dados simples de forma persistente no dispositivo. Dados que ficam salvos mesmo depois que o app é fechado ou o celular é reiniciado.
+  shared_preferences: ^2.2.3 
 
 dev_dependencies:
   flutter_test:
