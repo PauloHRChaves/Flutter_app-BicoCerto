@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'services/local_storage_service.dart';
 import 'routes.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final isFirstTime = await LocalStorageService.getIsFirstTime();
+  runApp(MyApp(isFirstTime: isFirstTime));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isFirstTime;
+  const MyApp({super.key, required this.isFirstTime});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Meu App',
-      initialRoute: AppRoutes.home,
+      initialRoute: isFirstTime ? AppRoutes.welcome : AppRoutes.login,
       routes: AppRoutes.routes,
     );
   }

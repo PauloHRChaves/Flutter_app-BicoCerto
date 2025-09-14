@@ -1,9 +1,12 @@
-import 'package:app_bicocerto/pages/home_page.dart';
+import 'pages/welcome_page.dart';
+import 'pages/login_page.dart';
 
 class AppRoutes {
-  static const String home = '/';
-  
+  static const String welcome = '/';
+  static const String login = '/login';
+
   static get routes => {
-    home: (context) => const HomePage(),
+    welcome: (context) => const WelcomePage(),
+    login: (context) => const LoginPage(),
   };
 }
