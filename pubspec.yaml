@@ -9,8 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Armazenar dados simples de forma persistente no dispositivo. Dados que ficam salvos mesmo depois que o app é fechado ou o celular é reiniciado.
-  shared_preferences: ^2.2.3 
+  # Comunicação com BACKEND.
+  http: ^1.5.0
+  # Pegar informações do aparelho.
+  device_info_plus: ^12.1.0
+  # Armazenar dados simples de forma persistente no dispositivo.
+  shared_preferences: ^2.2.3
+  # Armazenar dados sensiveis.
+  flutter_secure_storage: ^9.2.4
+  # Funcionalidade abrir o app via link (usada no email).
+  app_links: ^6.4.1
 
 dev_dependencies:
   flutter_test:
@@ -21,3 +29,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    
+  fonts:
+    - family: LeagueSpartan
+      fonts:
+        - asset: assets/fonts/LeagueSpartan/LeagueSpartan-Regular.ttf
+        - asset: assets/fonts/LeagueSpartan/LeagueSpartan-Bold.ttf
+          weight: 700

@@ -11,3 +11,4 @@ class LocalStorageService {
     await prefs.setBool('isFirstTime', value);
   }
 }
+// Dependência shared_preferences - guardar o valor de "isFirstTime"
