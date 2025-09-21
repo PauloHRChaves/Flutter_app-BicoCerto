@@ -95,14 +95,11 @@ class AuthService {
       "app_version": "1.0.0"
     };
   }
-}
-  // ----------------------------------------------------------------------
-  // METODOS NÃO ESSENCIAIS (ainda)
-  // ----------------------------------------------------------------------
-  
-  /*
+
+  // Logout
   Future<void> logout() async {
     final token = await getToken();
+    
     if (token != null) {
       await http.post(
         Uri.parse('$baseUrl/auth/logout'),
@@ -110,10 +107,16 @@ class AuthService {
           'Authorization': 'Bearer $token',
         },
       );
-      await deleteToken();
     }
+    await deleteToken();
   }
+}
 
+  // ----------------------------------------------------------------------
+  // METODOS NÃO ESSENCIAIS (ainda)
+  // ----------------------------------------------------------------------
+
+  /*
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password/forgot'),
