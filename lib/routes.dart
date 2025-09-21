@@ -13,6 +13,6 @@ class AppRoutes {
     welcome: (context) => const WelcomePage(),
     sessionCheck: (context) => const SessionCheckerPage(),
     authWrapper: (context) => const AuthWrapper(),
-    setProfile: (context) => const SetProfile(),
+    setProfile: (context) => const SetProfile()
   };
 }

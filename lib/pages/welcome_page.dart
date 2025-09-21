@@ -12,7 +12,11 @@ class WelcomePage extends StatelessWidget {
     await LocalStorageService.setIsFirstTime(false);
 
     if (context.mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.sessionCheck);
+      Navigator.pushNamedAndRemoveUntil(
+        context, 
+        AppRoutes.sessionCheck, 
+        (Route<dynamic> route) => false,
+      );
     }
   }
 
@@ -34,7 +38,7 @@ class WelcomePage extends StatelessWidget {
           ),
           Positioned.fill(
             child: ClipPath(
-              clipper: WaveClipper(), // Chama o widgets/wave_clipper.dart
+              clipper: WaveClipper(),
               child: Container(
                 color: const Color.fromARGB(255, 21, 107, 154),
               ),

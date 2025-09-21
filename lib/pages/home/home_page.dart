@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:bico_certo/routes.dart';
+import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/widgets/category_cards.dart';
-import 'package:bico_certo/pages/profile/profile.dart';
+import 'package:bico_certo/widgets/bottom_navbar.dart';
 
-// HOMEPAGE - PAGINA PRINCIPAL DO PROJETO - HAVERÁ MUDANÇAS
+// HOMEPAGE - PAGINA PRINCIPAL DO PROJETO
 
 class HomePage extends StatelessWidget {
     final bool isLoggedIn;
@@ -14,7 +16,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
               elevation: 0,
-              backgroundColor: Colors.white,
+              backgroundColor: const Color.fromARGB(255, 22, 76, 110),
               title: const Text("BICO CERTO",
               style: TextStyle(
                   color: Color.fromARGB(255, 37, 143, 230),
@@ -22,22 +24,71 @@ class HomePage extends StatelessWidget {
                 ),
               ),
         actions: [
-          // Exibe o botão de login apenas ao user deslogado
-          if (!isLoggedIn) 
-            TextButton(
+          if (!isLoggedIn)
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0), // Adiciona margem à direita
+              child:
+              OutlinedButton( // Use OutlinedButton
                 onPressed: () {
                   // Navega para a tela de login (AuthWrapper)
-                  Navigator.pushNamed(context, '/auth');
+                  Navigator.pushNamed(context, AppRoutes.authWrapper);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 60, 63, 218),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 10, 94, 140),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  side: const BorderSide(
+                    color: Color.fromARGB(255, 255, 255, 255),
+                    width: 1.5,
+                  ),
                 ),
-                child: const Text('Login', style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
+                child: const Text(
+                  'Login',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color.fromARGB(255, 255, 255, 255),
+                  ),
+                ),
+              ),
+            ),
+          
+          if (isLoggedIn)
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0), // Adiciona margem à direita
+              child:
+              OutlinedButton(
+                onPressed: () async {
+                  final AuthService authService = AuthService();
+                  await authService.logout();
+
+                  if (!context.mounted) return;
+
+                  Navigator.pushReplacementNamed(context, AppRoutes.sessionCheck,);
+                },
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 10, 94, 140),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  side: const BorderSide(
+                    color: Color.fromARGB(255, 255, 255, 255),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Text(
+                  'Logout', // O texto deve ser "Logout" para o botão de logout
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color.fromARGB(255, 255, 255, 255),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
-      body:
-      SingleChildScrollView(
+      
+      body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,43 +223,26 @@ class HomePage extends StatelessWidget {
               ),
           ),
       
-      
-      bottomNavigationBar: SizedBox(
-        height: 85,
-        child: BottomNavigationBar(
-          currentIndex: 2, // índice da aba selecionada
-          selectedItemColor: const Color.fromARGB(214, 255, 255, 255),
-          unselectedItemColor: const Color.fromARGB(214, 255, 255, 255),
-          backgroundColor: const Color.fromARGB(255, 14, 67, 182),
-          onTap: (index) {
-            if (index == 0) {
-              /*Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage()),
-              ); */
-            } else if (index == 1) {
-              /*Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const OrdersPage()),
-              //-------------- Vamos ver o que colocar ainda...
-              );*/
-            } else if (index == 2) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SetProfile()),
-              );
-            }
-          },
-
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
-            BottomNavigationBarItem(icon: Icon(Icons.list), label: "Pedidos"),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-          ],
-        ),           
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 0) {
+            /*  
+              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.sessionCheck, 
+              (route) => route.isFirst,
+            );*/
+          } else if (index == 1) {
+            /*
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.orders, 
+              (route) => route.isFirst,
+            );*/
+          } else if (index == 2) {
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.setProfile, 
+              (route) => route.isFirst,
+            );
+          }
+        },
       ),
     );
   }
 }
-
-

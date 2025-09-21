@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:bico_certo/pages/home/home_page.dart';
+import 'package:bico_certo/routes.dart';
+import 'package:bico_certo/widgets/bottom_navbar.dart';
 
 
 class SetProfile extends StatelessWidget {
@@ -27,6 +28,7 @@ class SetProfile extends StatelessWidget {
           ),
         ],
       ),
+      
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -137,12 +139,14 @@ class SetProfile extends StatelessWidget {
                     children: const [
                       Icon(Icons.star, color: Colors.amber, size: 28),
                       SizedBox(width: 6),
-                      Text("4.8",
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text("4.8", style: TextStyle(
+                          fontSize: 22, 
+                          fontWeight: FontWeight.bold)
+                      ),
                       SizedBox(width: 6),
                       Text("(125 avaliações)",
-                          style: TextStyle(color: Colors.grey, fontSize: 14)),
+                          style: TextStyle(color: Colors.grey, fontSize: 14)
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -168,7 +172,8 @@ class SetProfile extends StatelessWidget {
                               style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey)),
+                                  color: Colors.grey)
+                                ),
                         ),
                       ],
                     ),
@@ -193,42 +198,31 @@ class SetProfile extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(height: 80), // espaço pro footer
+          const SizedBox(height: 80),
         ],
       ),
-      bottomNavigationBar: SizedBox(
-        height: 85,
-        child: BottomNavigationBar(
-          currentIndex: 2, // índice da aba selecionada
-          selectedItemColor: Colors.indigo,
-          unselectedItemColor: Colors.grey,
-          backgroundColor: const Color.fromARGB(192, 255, 255, 255),
-          onTap: (index) {
-            if (index == 0) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage()),
-              ); 
-            } else if (index == 1) {
-              /*Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const OrdersPage()),
-              //-------------- Vamos ver o que colocar ainda...
-              );*/
-            } else if (index == 2) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SetProfile()),
-              );
-            }
-          },
-
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
-            BottomNavigationBarItem(icon: Icon(Icons.list), label: "Pedidos"),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-          ],
-        ),           
+      
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 0) {
+              Navigator.pushNamedAndRemoveUntil(
+              context, 
+              AppRoutes.sessionCheck, 
+              (route) => route.isFirst,
+            );
+          } else if (index == 1) {
+            /*
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.orders, 
+              (route) => route.isFirst,
+            );*/
+          } else if (index == 2) {
+            /*
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.setProfile, 
+              (route) => route.isFirst,
+            );*/
+          }
+        },
       ),
     );
   }
