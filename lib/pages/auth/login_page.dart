@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/home/home_page.dart';
+import 'package:bico_certo/widgets/wave_clipper.dart';
 //import 'package:bico_certo/pages/forgot_password_page.dart';
 
 // ----------------------------------------------------
@@ -89,96 +90,110 @@ class LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center( // Centraliza o conteúdo verticalmente
-        child: SingleChildScrollView( // Permite a rolagem
-          padding: const EdgeInsets.symmetric(horizontal: 24.0), // Adiciona espaçamento interno
-          child: Form( 
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                
-                // Título
-                const Text(
-                  'LOGIN',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 25, 116, 172),
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Input
-                TextFormField(
-                  controller: _emailController,
-                  decoration: _inputDecoration('Email', Icons.email),
-                  validator: (value) => value!.isEmpty ? 'O email é obrigatório' : null,
-                ),
-                
-                const SizedBox(height: 15),
-                
-                // Input
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: _inputDecoration('Senha', Icons.lock),
-                  obscureText: true,
-                  validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
-                ),
-                
-                const SizedBox(height: 15),
-                
-                /*
-                // Botão de "Esqueceu a senha?" (UI) - AINDA NÃO APLICADO
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                      );
-                    },
-                    child: const Text(
-                      'Esqueceu a senha?',
-                      style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-                */
-                
-                // Botão Login chama a logica de Login
-                ElevatedButton(
-                  onPressed: _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 25, 116, 172),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  ),
-                  child: const Text(
-                    'Entrar',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Trocar para tela de Register
-                TextButton(
-                  // Usa o callback passado do AuthWrapper para mudar a tela
-                  onPressed: () => widget.onRegisterPressed(),
-                  child: const Text(
-                    'Ainda não possui uma conta? Registrar',
-                    style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
-                  ),
-                ),
-              ],
+      body: Stack(      
+        children: [
+        Positioned.fill(
+          child: ClipPath(
+            clipper: WaveClipper(),
+            child: Container(
+              color: const Color.fromARGB(255, 21, 107, 154),
             ),
           ),
         ),
-      ),
+      
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Form( 
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    
+                    // Título
+                    const Text(
+                      'LOGIN',
+                      style: TextStyle(
+                        fontSize: 35,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 25, 116, 172),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Input
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: _inputDecoration('Email', Icons.email),
+                      validator: (value) => value!.isEmpty ? 'O email é obrigatório' : null,
+                    ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    // Input
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: _inputDecoration('Senha', Icons.lock),
+                      obscureText: true,
+                      validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
+                    ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    /*
+                    // Botão de "Esqueceu a senha?" (UI) - AINDA NÃO APLICADO
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                          );
+                        },
+                        child: const Text(
+                          'Esqueceu a senha?',
+                          style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+                    */
+                    
+                    // Botão Login chama a logica de Login
+                    ElevatedButton(
+                      onPressed: _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 25, 116, 172),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+                      ),
+                      child: const Text(
+                        'ENTRAR',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Trocar para tela de Register
+                    TextButton(
+                      // Usa o callback passado do AuthWrapper para mudar a tela
+                      onPressed: () => widget.onRegisterPressed(),
+                      child: const Text(
+                        'Ainda não possui uma conta? Registrar',
+                        style: TextStyle(fontSize: 18, color: Color.fromARGB(255, 25, 116, 172)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ]
+      )
     );
   }
 }

@@ -18,10 +18,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Bico Certo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Color(0xFF156b9a),
-        ),
-        fontFamily: 'LeagueSpartan',
+        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF156b9a)),
+        fontFamily: 'LeagueSpartan', 
         useMaterial3: true,
       ),
       initialRoute: isFirstTime ? AppRoutes.welcome : AppRoutes.sessionCheck,

@@ -24,8 +24,10 @@ class _SessionCheckerPageState extends State<SessionCheckerPage> {
     
     if (!mounted) return; // padrão de segurança 'desativa widget'
 
-    Navigator.pushReplacement(context,
-      MaterialPageRoute(builder: (_) => HomePage(isLoggedIn: isLoggedIn))
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => HomePage(isLoggedIn: isLoggedIn)),
+      (Route<dynamic> route) => false,
     );
   }
 
