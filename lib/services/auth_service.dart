@@ -110,13 +110,8 @@ class AuthService {
     }
     await deleteToken();
   }
-}
 
-  // ----------------------------------------------------------------------
-  // METODOS NÃO ESSENCIAIS (ainda)
-  // ----------------------------------------------------------------------
 
-  /*
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password/forgot'),
@@ -154,4 +149,4 @@ class AuthService {
       throw Exception('Falha ao redefinir a senha: ${response.statusCode}');
     }
   }
-  */
+}

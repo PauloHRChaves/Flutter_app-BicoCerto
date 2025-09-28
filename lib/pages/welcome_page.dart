@@ -22,7 +22,6 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     // Melhorar responsividade dos elementos - APENAS APLICADA NA "welcome_page" - AINDA EM TESTE
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
