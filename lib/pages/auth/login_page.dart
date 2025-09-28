@@ -24,11 +24,11 @@ class LoginPageState extends State<LoginPage> {
   // Controladores para pegar o texto dos campos de email e senha
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
+
   // ----------------------------------------------------
   // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
   // ----------------------------------------------------
-  
+
   // Instância do AuthService para comunicação com a API
   final AuthService _authService = AuthService();
 
@@ -38,8 +38,9 @@ class LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       try {
         // Uso da API: Chama o método para obter informações do dispositivo
-        final Map<String, dynamic> deviceInfo = await _authService.getDeviceInfo();
-        
+        final Map<String, dynamic> deviceInfo = await _authService
+            .getDeviceInfo();
+
         // Uso da API: Chama o método de login do AuthService, passando os dados
         await _authService.login(
           email: _emailController.text,
@@ -54,7 +55,9 @@ class LoginPageState extends State<LoginPage> {
         }
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomePage(isLoggedIn: true)),
+            MaterialPageRoute(
+              builder: (context) => const HomePage(isLoggedIn: true),
+            ),
           );
         }
       } catch (e) {
@@ -71,7 +74,7 @@ class LoginPageState extends State<LoginPage> {
   // ----------------------------------------------------
   // PARTE 3: CONSTRUÇÃO DA INTERFACE VISUAL (UI)
   // ----------------------------------------------------
-  
+
   // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
@@ -90,57 +93,74 @@ class LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(      
+      body: Stack(
         children: [
-        Positioned.fill(
-          child: ClipPath(
-            clipper: WaveClipper(),
-            child: Container(
-              color: const Color.fromARGB(255, 21, 107, 154),
+          Positioned.fill(
+            child: Transform.translate(
+              offset: const Offset(0, -40.0),
+              child: ClipPath(
+                clipper: WaveClipper(),
+                child: Container(
+                  color: const Color.fromARGB(255, 21, 107, 154),
+                ),
+              ),
             ),
           ),
-        ),
-      
+
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Form( 
+              child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 20),
-                    
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20.0),
+                      
+                      // CORREÇÃO: A imagem é o filho direto.
+                      child: Image.asset( 
+                        'assets/images/icon.png',
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
                     // Título
                     const Text(
                       'LOGIN',
                       style: TextStyle(
-                        fontSize: 35,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 25, 116, 172),
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        color: Color.fromARGB(255, 61, 97, 132),
                       ),
                     ),
-                    
-                    const SizedBox(height: 40),
-                    
+
+                    const SizedBox(height: 10),
+
                     // Input
                     TextFormField(
                       controller: _emailController,
                       decoration: _inputDecoration('Email', Icons.email),
-                      validator: (value) => value!.isEmpty ? 'O email é obrigatório' : null,
+                      validator: (value) =>
+                          value!.isEmpty ? 'O email é obrigatório' : null,
                     ),
-                    
+
                     const SizedBox(height: 15),
-                    
+
                     // Input
                     TextFormField(
                       controller: _passwordController,
                       decoration: _inputDecoration('Senha', Icons.lock),
                       obscureText: true,
-                      validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
+                      validator: (value) =>
+                          value!.isEmpty ? 'A senha é obrigatória' : null,
                     ),
-                    
-                    const SizedBox(height: 15),
+
+                    const SizedBox(height: 10),
 
                     // Botão Esqueceu a senha
                     Align(
@@ -148,41 +168,62 @@ class LoginPageState extends State<LoginPage> {
                       child: TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
                           );
                         },
                         child: const Text(
                           'Esqueceu a senha?',
-                          style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
+                          style: TextStyle(
+                            color: Color.fromARGB(255, 25, 116, 172),
+                          ),
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 10),
-                    
+
                     // Botão Login chama a logica de Login
                     ElevatedButton(
                       onPressed: _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 25, 116, 172),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          25,
+                          116,
+                          172,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 50,
+                          vertical: 10,
+                        ),
                       ),
                       child: const Text(
                         'ENTRAR',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Trocar para tela de Register
                     TextButton(
                       // Usa o callback passado do AuthWrapper para mudar a tela
                       onPressed: () => widget.onRegisterPressed(),
                       child: const Text(
                         'Ainda não possui uma conta? Registrar',
-                        style: TextStyle(fontSize: 18, color: Color.fromARGB(255, 25, 116, 172)),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Color.fromARGB(255, 25, 116, 172),
+                        ),
                       ),
                     ),
                   ],
@@ -190,8 +231,8 @@ class LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-        ]
-      )
+        ],
+      ),
     );
   }
 }

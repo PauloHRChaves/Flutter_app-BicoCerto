@@ -147,7 +147,7 @@ class HomePage extends StatelessWidget {
             // =========================================================
             // CONTEÚDO PRINCIPAL
 
-            //- BARRA DE PESQUISA
+            // BARRA DE PESQUISA
             SizedBox(
               height: 250,
               width: MediaQuery.of(context).size.width,
@@ -159,7 +159,6 @@ class HomePage extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
 
-                  // 2. O Conteúdo: Barra de Pesquisa posicionada
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
