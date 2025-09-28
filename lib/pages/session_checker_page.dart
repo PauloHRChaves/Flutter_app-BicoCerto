@@ -11,7 +11,7 @@ class SessionCheckerPage extends StatefulWidget {
 }
 
 class _SessionCheckerPageState extends State<SessionCheckerPage> {
-  final AuthService _authService = AuthService(); // uso da api
+  final AuthService _authService = AuthService();
   
   @override
   void initState() {
@@ -20,9 +20,9 @@ class _SessionCheckerPageState extends State<SessionCheckerPage> {
   }
 
   void _checkAuthStatusAndNavigate() async {
-    final isLoggedIn = await _authService.getAuthStatus(); // uso da api
+    final isLoggedIn = await _authService.getAuthStatus();
     
-    if (!mounted) return; // padrão de segurança 'desativa widget'
+    if (!mounted) return;
 
     Navigator.pushAndRemoveUntil(
       context,

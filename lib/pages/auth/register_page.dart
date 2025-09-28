@@ -19,7 +19,6 @@ class RegisterPageState extends State<RegisterPage> {
   // Chave para validar o formulário
   final _formKey = GlobalKey<FormState>();
 
-
   // Controladores para pegar o texto dos campos
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -213,5 +212,4 @@ class RegisterPageState extends State<RegisterPage> {
     );
   }
 }
-
 // const SizedBox - apenas um espaçamento entre elementos para manter responsividade

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:bico_certo/widgets/wave_clipper.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/home/home_page.dart';
-import 'package:bico_certo/widgets/wave_clipper.dart';
-//import 'package:bico_certo/pages/forgot_password_page.dart';
+import 'package:bico_certo/pages/auth/forgot_password_page.dart';
 
 // ----------------------------------------------------
 // PARTE 1: DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
@@ -141,9 +141,8 @@ class LoginPageState extends State<LoginPage> {
                     ),
                     
                     const SizedBox(height: 15),
-                    
-                    /*
-                    // Botão de "Esqueceu a senha?" (UI) - AINDA NÃO APLICADO
+
+                    // Botão Esqueceu a senha
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -160,7 +159,6 @@ class LoginPageState extends State<LoginPage> {
                     ),
 
                     const SizedBox(height: 10),
-                    */
                     
                     // Botão Login chama a logica de Login
                     ElevatedButton(
