@@ -1,3 +1,5 @@
+// lib/services/auth_service.dart
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -5,12 +7,64 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND - HAVERÁ MUDANÇAS
 
 class AuthService {
-  //final String baseUrl = 'http://127.0.0.1:8000'; // windows
-  final String baseUrl = 'http://10.0.2.2:8000'; // android
+  // Use o endereço do emulador Android para se conectar à sua máquina.
+  final String baseUrl = 'http://10.0.2.2:8000'; 
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
-  // METODOS ESSENCIAIS (Conexões com Login e Registro)
+  // FUNÇÕES AUXILIARES PROTEGIDAS (Para requisições que exigem Token)
+  // ----------------------------------------------------------------------
+
+  // Função auxiliar para requisições GET protegidas por token.
+  Future<Map<String, dynamic>> _secureGet(String endpoint) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Retorna o corpo decodificado
+      return json.decode(response.body);
+    } else {
+      // Retorna o status code para que a camada UI trate erros específicos (ex: 401, 404).
+      throw Exception('Falha na requisição GET. Status: ${response.statusCode}');
+    }
+  }
+
+  // Função auxiliar para requisições POST protegidas por token.
+  Future<Map<String, dynamic>> _securePost(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+    
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Falha na requisição POST. Status: ${response.statusCode}');
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  // MÉTODOS ESSENCIAIS (Login, Registro, Logout)
   // ----------------------------------------------------------------------
   
   // Salva o token de acesso no armazenamento seguro do dispositivo
@@ -34,7 +88,7 @@ class AuthService {
     return token != null;
   }
 
-  // Lógica de Registro
+  // Lógica de Registro (Omitida para brevidade)
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
@@ -58,7 +112,7 @@ class AuthService {
     }
   }
 
-  // Lógica de Login
+  // Lógica de Login (Omitida para brevidade)
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -85,7 +139,7 @@ class AuthService {
     }
   }
 
-  // Simulação de informações de device - MOCK
+  // Simulação de informações de device - MOCK (Omitida para brevidade)
   Future<Map<String, dynamic>> getDeviceInfo() async {
     return {
       "device_id": "generic-test-device-id",
@@ -96,7 +150,7 @@ class AuthService {
     };
   }
 
-  // Logout
+  // Logout (Omitida para brevidade)
   Future<void> logout() async {
     final token = await getToken();
     
@@ -148,5 +202,45 @@ class AuthService {
     } else {
       throw Exception('Falha ao redefinir a senha: ${response.statusCode}');
     }
+  }
+
+  // ----------------------------------------------------------------------
+  // NOVOS MÉTODOS WALLET (CORRIGIDOS)
+  // ----------------------------------------------------------------------
+
+  // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
+  Future<Map<String, dynamic>> getWalletDetails() async {
+    try {
+      // O resultado de _secureGet já é Map<String, dynamic>
+      final responseData = await _secureGet('wallet/my-wallet'); 
+      
+      // Se a resposta tiver a flag 'has_wallet', significa que é uma resposta de status (200 OK, mas sem carteira).
+      if (responseData['has_wallet'] == false) {
+         return responseData; // Retorna o Map que contém {"has_wallet": false}
+      }
+      
+      // Se a carteira existir, os detalhes devem estar no campo 'data'.
+      // Garante que retorna o Map<String, dynamic> ou um Map vazio {} se 'data' for nulo.
+      return responseData['data'] as Map<String, dynamic>? ?? {};
+
+    } catch (e) {
+      rethrow; 
+    }
+  }
+
+  // 2. Cria uma nova carteira (POST /wallet/create)
+  Future<Map<String, dynamic>> createWallet({required String password}) async {
+    final Map<String, dynamic> body = {
+      "password": password,
+      "force_replace": false
+    };
+    final response = await _securePost('wallet/create', body: body);
+    return response['data'] as Map<String, dynamic>? ?? {}; 
+  }
+
+  // 3. Obtém o saldo da carteira (GET /wallet/balance)
+  Future<Map<String, dynamic>> getBalance() async {
+    final response = await _secureGet('wallet/balance');
+    return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 }

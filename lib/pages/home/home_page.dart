@@ -1,22 +1,55 @@
-import 'package:flutter/material.dart';
-import 'package:bico_certo/routes.dart';
-import 'package:bico_certo/services/auth_service.dart';
-import 'package:bico_certo/widgets/category_cards.dart';
-import 'package:bico_certo/widgets/bottom_navbar.dart';
+// lib/pages/home/home_page.dart
 
-// HOMEPAGE - PAGINA PRINCIPAL DO PROJETO
+import 'package:flutter/material.dart';
+import 'package:bico_certo/routes.dart'; 
+import 'package:bico_certo/services/auth_service.dart';
+import 'package:bico_certo/widgets/category_cards.dart'; 
+import 'package:bico_certo/widgets/bottom_navbar.dart'; 
+
+// IMPORTS ABSOLUTOS (usando o nome do seu projeto como base do pacote)
+import 'package:bico_certo/pages/auth/auth_wrapper.dart'; // Importa AuthWrapper
+import 'package:bico_certo/pages/profile/profile.dart'; // Importa SetProfile
+
 
 class HomePage extends StatelessWidget {
   final bool isLoggedIn;
 
   const HomePage({super.key, required this.isLoggedIn});
 
+  // Função para lidar com o logout e navegação (USANDO ROTA NOMEADA)
+  void _handleLogout(BuildContext context) async {
+    final AuthService authService = AuthService();
+    await authService.logout();
+
+    if (!context.mounted) return;
+
+    // Navega para a rota de checagem de sessão (AppRoutes.sessionCheck)
+    Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.sessionCheck, 
+    );
+  }
+
+  // Função para lidar com o Login/Navegação (USANDO ROTA NOMEADA)
+  void _handleLogin(BuildContext context) {
+    // Navega para a rota do AuthWrapper
+    Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.authWrapper,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Definindo cores para facilitar a leitura
+    const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
+    const Color lightBlue = Color.fromARGB(255, 10, 94, 140);
+    const Color accentColor = Color.fromARGB(255, 255, 132, 0);
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color.fromARGB(255, 22, 76, 110),
+        backgroundColor: darkBlue,
         title: const Text(
           "BICO CERTO",
           style: TextStyle(
@@ -25,83 +58,38 @@ class HomePage extends StatelessWidget {
           ),
         ),
         actions: [
-          if (!isLoggedIn)
-            Padding(
-              padding: const EdgeInsets.only(
-                right: 16.0,
-              ), // Adiciona margem à direita
-              child: OutlinedButton(
-                // Use OutlinedButton
-                onPressed: () {
-                  // Navega para a tela de login (AuthWrapper)
-                  Navigator.pushNamed(context, AppRoutes.authWrapper);
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 10, 94, 140),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 10,
-                  ),
-                  side: const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255),
-                    width: 1.5,
-                  ),
+          // Botão condicional de Login/Logout
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: OutlinedButton(
+              onPressed: () {
+                if (isLoggedIn) {
+                  _handleLogout(context);
+                } else {
+                  _handleLogin(context);
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                backgroundColor: lightBlue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                child: const Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                side: const BorderSide(
+                  color: Color.fromARGB(255, 255, 255, 255),
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                isLoggedIn ? 'Logout' : 'Login',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ),
-
-          if (isLoggedIn)
-            Padding(
-              padding: const EdgeInsets.only(
-                right: 16.0,
-              ), // Adiciona margem à direita
-              child: OutlinedButton(
-                onPressed: () async {
-                  final AuthService authService = AuthService();
-                  await authService.logout();
-
-                  if (!context.mounted) return;
-
-                  Navigator.pushReplacementNamed(
-                    context,
-                    AppRoutes.sessionCheck,
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 10, 94, 140),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 10,
-                  ),
-                  side: const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255),
-                    width: 1.5,
-                  ),
-                ),
-                child: const Text(
-                  'Logout', // O texto deve ser "Logout" para o botão de logout
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
-                ),
-              ),
-            ),
+          ),
         ],
       ),
 
@@ -113,11 +101,8 @@ class HomePage extends StatelessWidget {
             // =========================================================
             Container(
               width: double.infinity,
-              color: const Color.fromARGB(255, 22, 76, 110),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 20.0,
-              ),
+              color: darkBlue,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: RichText(
                 textAlign: TextAlign.start,
                 text: TextSpan(
@@ -130,7 +115,7 @@ class HomePage extends StatelessWidget {
                     TextSpan(
                       text: 'Profissional Ideal',
                       style: TextStyle(
-                        color: const Color.fromARGB(255, 255, 132, 0),
+                        color: accentColor,
                         fontSize: 35,
                         fontWeight: FontWeight.bold,
                       ),
@@ -160,10 +145,10 @@ class HomePage extends StatelessWidget {
                   ),
 
                   // 2. O Conteúdo: Barra de Pesquisa posicionada
-                  Align(
+                  const Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
-                      padding: const EdgeInsets.only(
+                      padding: EdgeInsets.only(
                         left: 20.0,
                         right: 20.0,
                         bottom: 30.0,
@@ -202,9 +187,9 @@ class HomePage extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF4A3AFF),
+                        backgroundColor: const Color(0xFF4A3AFF),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
+                        shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(30)),
                         ),
                       ),
@@ -223,7 +208,7 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // Texto de Categorias Populares
-                  Text(
+                  const Text(
                     "Categorias Populares",
                     style: TextStyle(
                       fontSize: 25,
@@ -234,7 +219,7 @@ class HomePage extends StatelessWidget {
 
                   const SizedBox(height: 25),
 
-                  // Categorias (Grid) - O GridView e o Banner já estão dentro do Padding
+                  // Categorias (Grid)
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -243,6 +228,7 @@ class HomePage extends StatelessWidget {
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.4,
                     children: [
+                      // Corrigido para usar a classe CategoriaCard novamente
                       CategoriaCard(icon: Icons.build, text: "Reformas"),
                       CategoriaCard(
                         icon: Icons.electrical_services,
@@ -283,8 +269,8 @@ class HomePage extends StatelessWidget {
             // Banner para de chamada para cadastro como Profissional - Apenas para Client
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
                   colors: [Color(0xFF6A5AE0), Color(0xFF9D6CFF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -316,12 +302,15 @@ class HomePage extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: Color(0xFF4A3AFF),
+                      foregroundColor: const Color(0xFF4A3AFF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    onPressed: () {},
+                    // Leva para a tela de Login/Cadastro
+                    onPressed: () {
+                      _handleLogin(context);
+                    },
                     child: const Text(
                       "Cadastrar agora",
                       style: TextStyle(fontSize: 16),
@@ -338,20 +327,14 @@ class HomePage extends StatelessWidget {
         currentIndex: 0,
         onTap: (index) {
           if (index == 0) {
-            /*  
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.sessionCheck, 
-              (route) => route.isFirst,
-            );*/
+            // Se já estiver na Home, não faz nada
           } else if (index == 1) {
-            /*
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.orders, 
-              (route) => route.isFirst,
-            );*/
+            // Lógica para 'Pedidos'
+            // Adicione sua navegação aqui
           } else if (index == 2) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.setProfile,
-              (route) => route.isFirst,
+            // Navega para o perfil
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const SetProfile()), 
             );
           }
         },
