@@ -28,8 +28,7 @@ class _WelcomePageState extends State<WelcomePage> {
     },
     {
       'title': 'Conexão Rápida',
-      'subtitle':
-          'Converse diretamente com o profissional',
+      'subtitle': 'Converse diretamente com o profissional',
       'illustration_image': 'assets/images/pedreiro_transparente.png',
       'background_image': 'assets/images/back2.png',
     },
@@ -42,8 +41,7 @@ class _WelcomePageState extends State<WelcomePage> {
     },
     {
       'title': 'Pronto para Começar?!',
-      'subtitle':
-          'Cadastre-se já',
+      'subtitle': 'Cadastre-se já',
       'illustration_image': 'assets/images/handshake.png',
       'background_image': 'assets/images/back.png',
     },
@@ -81,49 +79,53 @@ class _WelcomePageState extends State<WelcomePage> {
     double screenHeight,
     double screenWidth,
   ) {
-    return Column(
-      children: [
-        SizedBox(height: screenHeight * 0.23),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+      child: Column(
+        children: [
+          SizedBox(height: screenHeight * 0.24),
 
-        // Título
-        Center(
-          child: Text(
-            pageData['title']!,
-            style: TextStyle(
-              fontSize: screenWidth * 0.08,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF1774A3),
+          // Título
+          Center(
+            child: Text(
+              pageData['title']!,
+              style: TextStyle(
+                fontSize: screenWidth * 0.07,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF1774A3),
+              ),
             ),
           ),
-        ),
 
-        SizedBox(height: screenHeight * 0.01),
+          SizedBox(height: screenHeight * 0.01),
 
-        // Subtítulo
-        Center(
-          child: Text(
-            pageData['subtitle']!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: screenWidth * 0.06,
-              fontWeight: FontWeight.w800,
-              height: 1.05,
-              color: const Color(0xFF339699),
+          // Subtítulo
+          Center(
+            child: Text(
+              pageData['subtitle']!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+                color: const Color(0xFF339699),
+              ),
             ),
           ),
-        ),
 
-        SizedBox(height: screenHeight * 0.01),
-
-        Center(
-          child: Image.asset(
-            pageData['illustration_image']!,
-            height: screenHeight * 0.40,
+          Expanded(
+            flex: 6,
+            child: Center(
+              child: Image.asset(
+                pageData['illustration_image']!,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
-        ),
 
-        const Spacer(),
-      ],
+          const Spacer(flex: 3),
+        ],
+      ),
     );
   }
 
@@ -135,8 +137,10 @@ class _WelcomePageState extends State<WelcomePage> {
     // Lógica do botão
     final bool isLastPage = _currentPage == _pagesData.length - 1;
     final String buttonText = isLastPage ? 'Continuar' : 'Próximo';
-    final VoidCallback buttonAction = isLastPage ? () => _continue(context): _nextPage;
-    
+    final VoidCallback buttonAction = isLastPage
+        ? () => _continue(context)
+        : _nextPage;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -201,12 +205,14 @@ class _WelcomePageState extends State<WelcomePage> {
                     height: screenHeight * 0.08,
                   ),
                   SizedBox(width: screenWidth * 0.015),
-                  Text(
-                    'BICO CERTO',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.08,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFFFFF),
+                  Flexible(
+                    child: Text(
+                      'BICO CERTO',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.08,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFFFFF),
+                      ),
                     ),
                   ),
                 ],
@@ -227,9 +233,13 @@ class _WelcomePageState extends State<WelcomePage> {
                     children: List.generate(_pagesData.length, (index) {
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.symmetric(horizontal: 5),
-                        height: 10,
-                        width: _currentPage == index ? 25 : 10,
+                        margin: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.01,
+                        ),
+                        height: screenHeight * 0.012,
+                        width: _currentPage == index
+                            ? screenWidth * 0.05
+                            : screenWidth * 0.025,
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? const Color(0xFF00A650)
