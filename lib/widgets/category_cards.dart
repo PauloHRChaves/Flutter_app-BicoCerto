@@ -23,4 +23,5 @@ class CategoriaCard extends StatelessWidget {
     );
   }
 }
-
+  
+  
