@@ -1,10 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
-import 'package:bico_certo/widgets/category_cards.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 
-// HOMEPAGE - PAGINA PRINCIPAL DO PROJETO
+// ----- Widget (Quadradinhos com as Categorias Populares.)
+class CategoriaCard extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const CategoriaCard({super.key, required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: const Color.fromARGB(255, 241, 133, 9), size: 35),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _handleLogout(BuildContext context) async {
+  final AuthService authService = AuthService();
+  await authService.logout();
+  if (!context.mounted) return;
+  Navigator.pushNamed(context, AppRoutes.sessionCheck);
+}
+
+void _handleLogin(BuildContext context) {
+  Navigator.pushNamed(context, AppRoutes.authWrapper);
+}
 
 class HomePage extends StatelessWidget {
   final bool isLoggedIn;
@@ -13,95 +48,57 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final double fontnormal = screenWidth * 0.04;
+    final double fontbold = screenWidth * 0.05;
+    final double title = screenWidth * 0.06;
+
+    const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
+    const Color lightBlue = Color.fromARGB(255, 10, 94, 140);
+    const Color blue = Color.fromARGB(255, 37, 143, 230);
+    const Color accentBlue = Color.fromARGB(255, 74, 58, 255);
+    const Color accentColor = Color.fromARGB(255, 255, 132, 0);
+    const Color white = Color.fromARGB(255, 252, 252, 252);
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color.fromARGB(255, 22, 76, 110),
+        backgroundColor: darkBlue,
         title: const Text(
           "BICO CERTO",
-          style: TextStyle(
-            color: Color.fromARGB(255, 37, 143, 230),
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: blue, fontWeight: FontWeight.bold),
         ),
         actions: [
-          if (!isLoggedIn)
-            Padding(
-              padding: const EdgeInsets.only(
-                right: 16.0,
-              ), // Adiciona margem à direita
-              child: OutlinedButton(
-                // Use OutlinedButton
-                onPressed: () {
-                  // Navega para a tela de login (AuthWrapper)
-                  Navigator.pushNamed(context, AppRoutes.authWrapper);
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 10, 94, 140),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 10,
-                  ),
-                  side: const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255),
-                    width: 1.5,
-                  ),
+          Padding(
+            padding: EdgeInsets.only(right: screenWidth * 0.04),
+            child: OutlinedButton(
+              onPressed: () {
+                if (isLoggedIn) {
+                  _handleLogout(context);
+                } else {
+                  _handleLogin(context);
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                backgroundColor: lightBlue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                child: const Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+                side: const BorderSide(color: white, width: 1),
+              ),
+              child: Text(
+                isLoggedIn ? 'Logout' : 'Login',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ),
-
-          if (isLoggedIn)
-            Padding(
-              padding: const EdgeInsets.only(
-                right: 16.0,
-              ), // Adiciona margem à direita
-              child: OutlinedButton(
-                onPressed: () async {
-                  final AuthService authService = AuthService();
-                  await authService.logout();
-
-                  if (!context.mounted) return;
-
-                  Navigator.pushReplacementNamed(
-                    context,
-                    AppRoutes.sessionCheck,
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 10, 94, 140),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 10,
-                  ),
-                  side: const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255),
-                    width: 1.5,
-                  ),
-                ),
-                child: const Text(
-                  'Logout', // O texto deve ser "Logout" para o botão de logout
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
-                ),
-              ),
-            ),
+          ),
         ],
       ),
 
@@ -110,34 +107,31 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // =========================================================
             Container(
-              width: double.infinity,
-              color: const Color.fromARGB(255, 22, 76, 110),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 20.0,
+              height: screenHeight * 0.14,
+              width: screenWidth,
+              color: darkBlue,
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.04,
+                vertical: screenHeight * 0.02,
               ),
               child: RichText(
                 textAlign: TextAlign.start,
                 text: TextSpan(
-                  text: 'Encontre o ', // texto normal
-                  style: const TextStyle(
-                    color: Colors.white, // Corrigido para branco
-                    fontSize: 32,
-                  ),
+                  text: 'Encontre o ',
+                  style: TextStyle(color: white, fontSize: screenWidth * 0.08),
                   children: <TextSpan>[
                     TextSpan(
                       text: 'Profissional Ideal',
                       style: TextStyle(
-                        color: const Color.fromARGB(255, 255, 132, 0),
-                        fontSize: 35,
+                        color: accentColor,
+                        fontSize: screenWidth * 0.09,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const TextSpan(
+                    TextSpan(
                       text: ' para o seu serviço !',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: white),
                     ),
                   ],
                 ),
@@ -149,8 +143,8 @@ class HomePage extends StatelessWidget {
 
             // BARRA DE PESQUISA
             SizedBox(
-              height: 250,
-              width: MediaQuery.of(context).size.width,
+              height: screenHeight * 0.23,
+              width: screenWidth,
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
@@ -162,15 +156,15 @@ class HomePage extends StatelessWidget {
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 20.0,
-                        right: 20.0,
-                        bottom: 30.0,
+                      padding: EdgeInsets.only(
+                        left: screenWidth * 0.05,
+                        right: screenWidth * 0.05,
+                        bottom: screenHeight * 0.01,
                       ),
                       child: TextField(
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: white,
                           hintText: "Qual serviço você procura?",
                           prefixIcon: Icon(Icons.search),
                           border: OutlineInputBorder(
@@ -178,8 +172,7 @@ class HomePage extends StatelessWidget {
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 15,
+                            horizontal: screenHeight * 0.015,
                           ),
                         ),
                       ),
@@ -189,51 +182,55 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: screenHeight * 0.01),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Botão de Busca.
                   SizedBox(
-                    width: double.infinity,
+                    width: screenWidth,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF4A3AFF),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: accentBlue,
+                        padding: EdgeInsets.symmetric(
+                          vertical: screenHeight * 0.01,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(30)),
                         ),
                       ),
+
+                      // AINDA N IMPLEMENTADO
                       onPressed: () {},
-                      child: const Text(
+
+                      child: Text(
                         "Buscar Serviço",
                         style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
+                          fontSize: fontbold,
+                          color: white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
 
                   // Texto de Categorias Populares
                   Text(
-                    "Categorias Populares",
+                    "Categorias Populares: ",
                     style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.w500,
+                      fontSize: title,
+                      fontWeight: FontWeight.w600,
                       fontFamily: 'Inter',
                     ),
                   ),
 
-                  const SizedBox(height: 25),
+                  SizedBox(height: screenHeight * 0.02),
 
-                  // Categorias (Grid) - O GridView e o Banner já estão dentro do Padding
+                  // Categorias GridView - MODIFICAR
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -274,7 +271,7 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.02),
                 ],
               ),
             ),
@@ -284,7 +281,10 @@ class HomePage extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF6A5AE0), Color(0xFF9D6CFF)],
+                  colors: [
+                    Color.fromARGB(255, 68, 52, 195),
+                    Color.fromARGB(255, 127, 79, 224),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -292,38 +292,42 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "É Profissional?",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      color: white,
+                      fontSize: title,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
 
-                  const Text(
+                  SizedBox(height: screenHeight * 0.01),
+
+                  Text(
                     "Cadastre-se, busque e receba orçamentos de novos clientes.",
                     style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
-                      color: Color.fromARGB(211, 255, 255, 255),
+                      fontSize: fontnormal, 
+                      color: white
                     ),
                   ),
-                  const SizedBox(height: 12),
+
+                  SizedBox(height: screenHeight * 0.01),
 
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Color(0xFF4A3AFF),
+                      backgroundColor: white,
+                      foregroundColor: accentBlue,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                     onPressed: () {},
-                    child: const Text(
+                    child: Text(
                       "Cadastrar agora",
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(
+                        fontSize: fontnormal,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -342,10 +346,12 @@ class HomePage extends StatelessWidget {
               (route) => route.isFirst,
             );*/
           } else if (index == 1) {
-            /*
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.orders, 
+            // Testar paginas sem backend
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.teste,
               (route) => route.isFirst,
-            );*/
+            );
           } else if (index == 2) {
             Navigator.pushNamedAndRemoveUntil(
               context,

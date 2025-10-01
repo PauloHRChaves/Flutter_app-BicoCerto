@@ -5,7 +5,7 @@ import 'package:bico_certo/pages/home/home_page.dart';
 import 'package:bico_certo/pages/auth/forgot_password_page.dart';
 
 // ----------------------------------------------------
-// PARTE 1: DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
+// DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
 // ----------------------------------------------------
 
 class LoginPage extends StatefulWidget {
@@ -18,16 +18,11 @@ class LoginPage extends StatefulWidget {
 }
 
 class LoginPageState extends State<LoginPage> {
-  // Chave para validar o formulário
   final _formKey = GlobalKey<FormState>();
 
   // Controladores para pegar o texto dos campos de email e senha
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  // ----------------------------------------------------
-  // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
-  // ----------------------------------------------------
 
   // Instância do AuthService para comunicação com a API
   final AuthService _authService = AuthService();
@@ -71,10 +66,6 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ----------------------------------------------------
-  // PARTE 3: CONSTRUÇÃO DA INTERFACE VISUAL (UI)
-  // ----------------------------------------------------
-
   // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
@@ -92,34 +83,43 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final double fontnormal = screenWidth * 0.035;
+    final double font = screenWidth * 0.04;
+    final double fonttitle = screenWidth * 0.1;
+
+    const blackblue = Color.fromARGB(255, 10, 94, 140);
+    const textblack = Color.fromARGB(255, 33, 33, 33);
+
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
             child: Transform.translate(
-              offset: const Offset(0, -40.0),
+              offset: const Offset(0, -50.0),
               child: ClipPath(
                 clipper: WaveClipper(),
-                child: Container(
-                  color: const Color.fromARGB(255, 21, 107, 154),
-                ),
+                child: Container(color: blackblue),
               ),
             ),
           ),
 
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    SizedBox(height: screenHeight * 0.1),
+
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(20.0),
-                      
-                      // CORREÇÃO: A imagem é o filho direto.
-                      child: Image.asset( 
+                      borderRadius: BorderRadius.circular(30.0),
+
+                      child: Image.asset(
                         'assets/images/icon.png',
                         width: 110,
                         height: 110,
@@ -127,19 +127,17 @@ class LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
-
                     // Título
-                    const Text(
+                    Text(
                       'LOGIN',
                       style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: Color.fromARGB(255, 61, 97, 132),
+                        fontSize: fonttitle,
+                        fontWeight: FontWeight.bold,
+                        color: blackblue,
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    SizedBox(height: screenHeight * 0.01),
 
                     // Input
                     TextFormField(
@@ -149,7 +147,7 @@ class LoginPageState extends State<LoginPage> {
                           value!.isEmpty ? 'O email é obrigatório' : null,
                     ),
 
-                    const SizedBox(height: 15),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
@@ -159,8 +157,6 @@ class LoginPageState extends State<LoginPage> {
                       validator: (value) =>
                           value!.isEmpty ? 'A senha é obrigatória' : null,
                     ),
-
-                    const SizedBox(height: 10),
 
                     // Botão Esqueceu a senha
                     Align(
@@ -173,59 +169,59 @@ class LoginPageState extends State<LoginPage> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           'Esqueceu a senha?',
                           style: TextStyle(
-                            color: Color.fromARGB(255, 25, 116, 172),
+                            color: textblack,
+                            fontSize: fontnormal,
+                            fontFamily: 'Inter',
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Botão Login chama a logica de Login
                     ElevatedButton(
                       onPressed: _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(
-                          255,
-                          25,
-                          116,
-                          172,
-                        ),
+                        backgroundColor: blackblue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 50,
-                          vertical: 10,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.2,
+                          vertical: screenHeight * 0.015,
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'ENTRAR',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: font,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Trocar para tela de Register
                     TextButton(
                       // Usa o callback passado do AuthWrapper para mudar a tela
                       onPressed: () => widget.onRegisterPressed(),
-                      child: const Text(
+                      child: Text(
                         'Ainda não possui uma conta? Registrar',
                         style: TextStyle(
-                          fontSize: 18,
-                          color: Color.fromARGB(255, 25, 116, 172),
+                          fontSize: font,
+                          fontFamily: 'Inter',
+                          color: const Color.fromARGB(255, 8, 109, 163),
                         ),
                       ),
                     ),
+
+                    SizedBox(height: screenHeight * 0.05),
                   ],
                 ),
               ),

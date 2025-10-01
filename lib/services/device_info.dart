@@ -1,5 +1,5 @@
-import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 
 Future<Map<String, dynamic>> getDeviceInfo() async {
   final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
@@ -28,4 +28,4 @@ Future<Map<String, dynamic>> getDeviceInfo() async {
   }
   return deviceData;
 }
-// Dependência device_info_plus - pegar informações do device - AINDA NÃO APLICADA
+// Dependência device_info_plus - pegar informações do device - ( AINDA NÃO APLICADA )

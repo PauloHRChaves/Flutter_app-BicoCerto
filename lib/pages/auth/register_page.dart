@@ -98,17 +98,23 @@ class RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final double font = screenWidth * 0.04;
+    final double fonttitle = screenWidth * 0.1;
+
+    const blackblue = Color.fromARGB(255, 10, 94, 140);
+
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
             child: Transform.translate(
-              offset: const Offset(0, -40.0),
+              offset: const Offset(0, -50.0),
               child: ClipPath(
                 clipper: WaveClipper(),
-                child: Container(
-                  color: const Color.fromARGB(255, 21, 107, 154),
-                ),
+                child: Container(color: blackblue),
               ),
             ),
           ),
@@ -121,7 +127,7 @@ class RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 50),
+                    SizedBox(height: screenHeight * 0.1),
 
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20.0),
@@ -134,20 +140,17 @@ class RegisterPageState extends State<RegisterPage> {
                         fit: BoxFit.cover,
                       ),
                     ),
-
-                    const SizedBox(height: 10),
-
                     // Título
-                    const Text(
+                    Text(
                       'CADASTRO',
                       style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: Color.fromARGB(255, 61, 97, 132),
+                        fontSize: fonttitle,
+                        fontWeight: FontWeight.bold,
+                        color: blackblue,
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
@@ -161,7 +164,7 @@ class RegisterPageState extends State<RegisterPage> {
                           : null,
                     ),
 
-                    const SizedBox(height: 15),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
@@ -171,7 +174,7 @@ class RegisterPageState extends State<RegisterPage> {
                           value!.isEmpty ? 'O email é obrigatório' : null,
                     ),
 
-                    const SizedBox(height: 15),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
@@ -181,7 +184,7 @@ class RegisterPageState extends State<RegisterPage> {
                       validator: _validatePassword,
                     ),
 
-                    const SizedBox(height: 15),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
@@ -202,50 +205,47 @@ class RegisterPageState extends State<RegisterPage> {
                       },
                     ),
 
-                    const SizedBox(height: 25),
+                    SizedBox(height: screenHeight * 0.03),
 
                     // Botão Cadastrar chama logica de Register
                     ElevatedButton(
                       onPressed: _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(
-                          255,
-                          25,
-                          116,
-                          172,
-                        ),
+                        backgroundColor: blackblue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 50,
-                          vertical: 10,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.2,
+                          vertical: screenHeight * 0.015,
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'CADASTRAR',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: font,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Trocar para tela de Login
                     TextButton(
-                      // Usa o callback passado do AuthWrapper para mudar a tela
                       onPressed: () => widget.onLoginPressed(),
-                      child: const Text(
+                      child: Text(
                         'Já possui uma conta? Login',
                         style: TextStyle(
-                          fontSize: 18,
-                          color: Color.fromARGB(255, 25, 116, 172),
+                          fontSize: font,
+                          fontFamily: 'Inter',
+                          color: const Color.fromARGB(255, 8, 109, 163),
                         ),
                       ),
                     ),
+
+                    SizedBox(height: screenHeight * 0.05),
                   ],
                 ),
               ),

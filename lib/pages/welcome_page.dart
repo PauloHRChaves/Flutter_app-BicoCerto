@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/local_storage_service.dart';
 import 'package:bico_certo/widgets/wave_clipper.dart';
-// Assuma que 'routes.dart', 'local_storage_service.dart' e 'wave_clipper.dart' existem
 
-// 1. CONVERTER PARA StatefulWidget
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
 
@@ -13,12 +11,10 @@ class WelcomePage extends StatefulWidget {
 }
 
 class _WelcomePageState extends State<WelcomePage> {
-  // 2. ADICIONAR PageController Para o Conteúdo e Para o Fundo
   final PageController _contentController = PageController();
   final PageController _backgroundController = PageController();
   int _currentPage = 0;
 
-  // 3. DEFINIR O CONTEÚDO DE TODAS AS PÁGINAS (incluindo as imagens de fundo e ilustração)
   final List<Map<String, String>> _pagesData = [
     {
       'title': 'Qual serviço procura?!',
@@ -137,9 +133,7 @@ class _WelcomePageState extends State<WelcomePage> {
     // Lógica do botão
     final bool isLastPage = _currentPage == _pagesData.length - 1;
     final String buttonText = isLastPage ? 'Continuar' : 'Próximo';
-    final VoidCallback buttonAction = isLastPage
-        ? () => _continue(context)
-        : _nextPage;
+    final VoidCallback buttonAction = isLastPage ? () => _continue(context) : _nextPage;
 
     return Scaffold(
       body: Stack(
