@@ -71,6 +71,7 @@ class CustomBottomNavBar extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 20),
 
         ),
+          
           _buildNavItem(Icons.wallet, "Carteira", 2),
           _buildNavItem(Icons.person_outline, "Perfil", 3),
         ],
