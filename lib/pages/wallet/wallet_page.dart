@@ -136,6 +136,7 @@ class _WalletPageState extends State<WalletPage> {
           }
         },
       ),
+    
     );
   }
 

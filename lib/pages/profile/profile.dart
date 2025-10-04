@@ -3,8 +3,8 @@ import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 
 
-class SetProfile extends StatelessWidget {
-  const SetProfile({super.key});
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -202,9 +202,10 @@ class SetProfile extends StatelessWidget {
         ],
       ),
       
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 0,
+       bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 3,
         onTap: (index) {
+
           if (index == 0) {
               Navigator.pushNamedAndRemoveUntil(
               context, 
@@ -212,18 +213,23 @@ class SetProfile extends StatelessWidget {
               (route) => route.isFirst,
             );
           } else if (index == 1) {
-            /*
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.orders, 
+            
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, 
               (route) => route.isFirst,
-            );*/
+            );
           } else if (index == 2) {
-            /*
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.setProfile, 
+            
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.walletPage, 
               (route) => route.isFirst,
-            );*/
+            );
+          } else if (index == 3) {
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
+              (route) => route.isFirst,
+            );
           }
         },
       ),
+    
     );
   }
 }

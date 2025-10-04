@@ -334,28 +334,34 @@ class HomePage extends StatelessWidget {
         ),
       ),
 
-      bottomNavigationBar: CustomBottomNavBar(
+        bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 0,
         onTap: (index) {
+
           if (index == 0) {
-            /*  
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.sessionCheck, 
+              Navigator.pushNamedAndRemoveUntil(
+              context, 
+              AppRoutes.sessionCheck, 
               (route) => route.isFirst,
-            );*/
+            );
           } else if (index == 1) {
-            /*
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.orders, 
+            
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, 
               (route) => route.isFirst,
-            );*/
+            );
           } else if (index == 2) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.setProfile,
+            
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.walletPage, 
+              (route) => route.isFirst,
+            );
+          } else if (index == 3) {
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
               (route) => route.isFirst,
             );
           }
         },
       ),
+    
     );
   }
 }
