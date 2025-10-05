@@ -1,5 +1,6 @@
 // widgets/bottom_navbar.dart
 import 'package:flutter/material.dart';
+import 'package:bico_certo/routes.dart';
 
 
   // Widget para a Bottom Navigation Bar em todas as paginas
@@ -65,7 +66,7 @@ class CustomBottomNavBar extends StatelessWidget {
 
           icon: const Icon(Icons.add_circle, size: 60, color: centerBottomColor),
           onPressed: () {
-            // Ação do botão central (se necessário)
+              Navigator.of(context).pushNamed(AppRoutes.orderInfoPage); //------------ TROQUEI A ROTA PATA TESTES, DEPOIS VOLTO PRA ROTA DE CRIAR PEDIDO
           },
           tooltip: 'Nova Ação',
           padding: const EdgeInsets.only(bottom: 20),
