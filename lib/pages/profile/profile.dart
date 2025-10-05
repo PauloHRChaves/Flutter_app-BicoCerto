@@ -5,6 +5,8 @@ import 'package:bico_certo/widgets/bottom_navbar.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+  final double totalEarnings = 1850.00;
+  final double percentageChange = 12.0;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +118,76 @@ class ProfilePage extends StatelessWidget {
                     title: Text("Manutenção de Sistemas"),
                   ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // ---- Ganhos / Dashboard Page
+            // Dados simulados
+  
+          InkWell(
+            onTap: (){Navigator.of(context).pushNamed(AppRoutes.dashboardPage);}, // Ação ao clicar (navegar para outra página)
+            borderRadius: BorderRadius.circular(12.0),
+            child: Card(
+              // Definições visuais para replicar o estilo do seu dashboard
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              elevation: 4, // Sombra suave (replicando o box-shadow)
+              margin: EdgeInsets.zero, // Remove margem padrão do Card se estiver em Column/Row
+              
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    // Título e Ícone
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        const Text(
+                          'Ganhos Totais da Semana',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF333333), // Cor escura para o título
+                          ),
+                        ),
+                        const Icon(
+                          Icons.trending_up, // Ícone de tendência (similar a 'chart-line')
+                          color: Color(0xFF4CAF50), // Verde para sucesso
+                          size: 28,
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 10),
+
+                    // Valor Principal
+                    Text(
+                      'R\$ ${totalEarnings.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1a1a1a),
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Detalhe de Comparação
+                    Text(
+                      '+${percentageChange.toStringAsFixed(0)}% em relação à semana anterior',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF4CAF50), // Verde
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -233,5 +305,4 @@ class ProfilePage extends StatelessWidget {
     );
   }
 }
- 
  
