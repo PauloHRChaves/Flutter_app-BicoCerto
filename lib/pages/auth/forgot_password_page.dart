@@ -1,5 +1,3 @@
-// lib/pages/forgot_password_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/auth/reset_password_page.dart';
@@ -73,12 +71,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
             const SizedBox(height: 20),
 
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _handleForgotPassword,
-                    child: const Text('Enviar'),
-                  ),
+            _isLoading ? const CircularProgressIndicator() : ElevatedButton(
+              onPressed: _handleForgotPassword,
+              child: const Text('Enviar'),
+            ),
           ],
         ),
       ),

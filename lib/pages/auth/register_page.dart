@@ -23,12 +23,13 @@ class RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-  
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
   // ----------------------------------------------------
   // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
   // ----------------------------------------------------
-  
+
   // Instância do AuthService para comunicação com a API
   final AuthService _authService = AuthService();
 
@@ -56,7 +57,7 @@ class RegisterPageState extends State<RegisterPage> {
       }
     }
   }
-  
+
   // Validador
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
@@ -98,58 +99,84 @@ class RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final double font = screenWidth * 0.04;
+    final double fonttitle = screenWidth * 0.1;
+
+    const blackblue = Color.fromARGB(255, 10, 94, 140);
+
     return Scaffold(
-      body: Stack(      
+      body: Stack(
         children: [
-        Positioned.fill(
-          child: ClipPath(
-            clipper: WaveClipper(),
-            child: Container(
-              color: const Color.fromARGB(255, 21, 107, 154),
+          Positioned.fill(
+            child: Transform.translate(
+              offset: const Offset(0, -50.0),
+              child: ClipPath(
+                clipper: WaveClipper(),
+                child: Container(color: blackblue),
+              ),
             ),
           ),
-        ),
 
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Form( 
+              child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 80),
+                    SizedBox(height: screenHeight * 0.1),
 
-                    // Título
-                    const Text(
-                      'CADASTRO',
-                      style: TextStyle(
-                        fontSize: 35,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 25, 116, 172),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20.0),
+
+                      // CORREÇÃO: A imagem é o filho direto.
+                      child: Image.asset(
+                        'assets/images/icon.png',
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    
-                    const SizedBox(height: 40),
-                    
+                    // Título
+                    Text(
+                      'CADASTRO',
+                      style: TextStyle(
+                        fontSize: fonttitle,
+                        fontWeight: FontWeight.bold,
+                        color: blackblue,
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
                     // Input
                     TextFormField(
                       controller: _fullNameController,
-                      decoration: _inputDecoration('Nome Completo', Icons.person),
-                      validator: (value) => value!.isEmpty ? 'O nome completo é obrigatório' : null,
+                      decoration: _inputDecoration(
+                        'Nome Completo',
+                        Icons.person,
+                      ),
+                      validator: (value) => value!.isEmpty
+                          ? 'O nome completo é obrigatório'
+                          : null,
                     ),
-                    
-                    const SizedBox(height: 15),
-                    
+
+                    SizedBox(height: screenHeight * 0.02),
+
                     // Input
                     TextFormField(
                       controller: _emailController,
                       decoration: _inputDecoration('Email', Icons.email),
-                      validator: (value) => value!.isEmpty ? 'O email é obrigatório' : null,
+                      validator: (value) =>
+                          value!.isEmpty ? 'O email é obrigatório' : null,
                     ),
-                    
-                    const SizedBox(height: 15),
-                    
+
+                    SizedBox(height: screenHeight * 0.02),
+
                     // Input
                     TextFormField(
                       controller: _passwordController,
@@ -157,13 +184,16 @@ class RegisterPageState extends State<RegisterPage> {
                       obscureText: true,
                       validator: _validatePassword,
                     ),
-                    
-                    const SizedBox(height: 15),    
-                    
+
+                    SizedBox(height: screenHeight * 0.02),
+
                     // Input
                     TextFormField(
                       controller: _confirmPasswordController,
-                      decoration: _inputDecoration('Confirmar Senha', Icons.lock),
+                      decoration: _inputDecoration(
+                        'Confirmar Senha',
+                        Icons.lock,
+                      ),
                       obscureText: true,
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -175,41 +205,55 @@ class RegisterPageState extends State<RegisterPage> {
                         return null;
                       },
                     ),
-                  
-                    const SizedBox(height: 25),
-                    
+
+                    SizedBox(height: screenHeight * 0.03),
+
                     // Botão Cadastrar chama logica de Register
                     ElevatedButton(
                       onPressed: _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 25, 116, 172),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+                        backgroundColor: blackblue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.2,
+                          vertical: screenHeight * 0.015,
+                        ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'CADASTRAR',
-                        style: TextStyle(fontSize: 18,fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: font,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    
-                    const SizedBox(height: 20),
+
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Trocar para tela de Login
                     TextButton(
-                      // Usa o callback passado do AuthWrapper para mudar a tela
                       onPressed: () => widget.onLoginPressed(),
-                      child: const Text(
+                      child: Text(
                         'Já possui uma conta? Login',
-                        style: TextStyle(fontSize: 18,color: Color.fromARGB(255, 25, 116, 172)),
+                        style: TextStyle(
+                          fontSize: font,
+                          fontFamily: 'Inter',
+                          color: const Color.fromARGB(255, 8, 109, 163),
+                        ),
                       ),
                     ),
+
+                    SizedBox(height: screenHeight * 0.05),
                   ],
                 ),
               ),
             ),
           ),
-        ]
-      )
+        ],
+      ),
     );
   }
 }

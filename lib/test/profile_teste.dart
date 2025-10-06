@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:bico_certo/pages/profile/wallet_page.dart';
-import 'package:bico_certo/pages/profile/create_wallet_page.dart';
-import 'package:bico_certo/services/auth_service.dart';
-import 'package:bico_certo/services/auth_guard.dart';
-// import 'package:bico_certo/routes.dart'; 
-// import 'package:bico_certo/widgets/bottom_navbar.dart'; 
+import 'package:bico_certo/widgets/bottom_navbar.dart';
+import 'package:bico_certo/routes.dart';
 
-
-class SetProfile extends StatefulWidget {
-  const SetProfile({super.key});
+class Testing extends StatefulWidget {
+  const Testing({super.key});
 
   @override
-  State<SetProfile> createState() => _SetProfileState();
+  State<Testing> createState() => _SetProfileState();
 }
 
-class _SetProfileState extends State<SetProfile> {
-  final AuthService _authService = AuthService();
-  
+class _SetProfileState extends State<Testing> {
   // Funções utilitárias para construir os elementos do design
+  
   Widget _buildStatCard({required String title, required String value, required Color color, bool isRating = false}) {
     return Expanded(
       child: Container(
@@ -25,7 +19,7 @@ class _SetProfileState extends State<SetProfile> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 3)],
+          boxShadow: [BoxShadow(color: Colors.grey, spreadRadius: 1, blurRadius: 3)],
         ),
         child: Column(
           children: [
@@ -58,36 +52,6 @@ class _SetProfileState extends State<SetProfile> {
     );
   }
 
-  // Lógica de navegação e checagem da Wallet 
-  void _checkAndNavigateToWallet() async {
-    try {
-      final details = await _authService.getWalletDetails(); 
-
-      if (details['has_wallet'] == true) {
-        if (mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const WalletPage()),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Carteira não encontrada. Por favor, crie uma.')),
-          );
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const CreateWalletPage()),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro de API: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
   // Widget para os botões de ação na barra horizontal (com indicador ativo)
   Widget _buildActionButton({required BuildContext context, required IconData icon, required String label, VoidCallback? onTap, bool isActive = false}) {
     const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
@@ -112,35 +76,18 @@ class _SetProfileState extends State<SetProfile> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
     const Color lightBackground = Color.fromARGB(255, 230, 230, 230);
     const Color darkText = Color.fromARGB(255, 30, 30, 30);
-    const Color redText = Color.fromARGB(255, 255, 0, 0);
 
     // FIX SEGURANÇA: AuthGuard envolve todo o conteúdo do Scaffold
-    return AuthGuard(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: lightBackground,
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0,
-          title: const Text(
-            "CONTA DE PRESTADOR",
-            style: TextStyle(color: redText, fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.grey),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.grey),
-              onPressed: () {},
-            ),
-          ],
         ),
         
         body: ListView(
@@ -218,7 +165,6 @@ class _SetProfileState extends State<SetProfile> {
                     context: context,
                     icon: Icons.account_balance_wallet_outlined,
                     label: "Wallet",
-                    onTap: _checkAndNavigateToWallet, 
                     isActive: true, 
                   ),
                   _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY"),
@@ -251,9 +197,30 @@ class _SetProfileState extends State<SetProfile> {
           ],
         ),
         
-        // bottomNavigationBar: CustomBottomNavBar( ... ) // Mantenha sua BottomNavBar aqui
-
+        bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 0) {  
+              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.sessionCheck, 
+              (route) => route.isFirst,
+            );
+          } else if (index == 1) {
+            /*
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.teste, 
+              (route) => route.isFirst,
+            );*/
+          } else if (index == 2) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.setProfile,
+              (route) => route.isFirst,
+            );
+          }
+        },
       ),
+
     );
   }
 }
+
+// PAGINA SEM LOGICA APLICADA - APENAS PARA UI
