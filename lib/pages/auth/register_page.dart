@@ -45,6 +45,7 @@ class RegisterPageState extends State<RegisterPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Usuário cadastrado com sucesso!')),
           );
+          widget.onLoginPressed();
         }
       } catch (e) {
         if (mounted) {
