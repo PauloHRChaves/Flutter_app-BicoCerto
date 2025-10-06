@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:bico_certo/widgets/wave_clipper.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/home/home_page.dart';
-//import 'package:bico_certo/pages/forgot_password_page.dart';
+import 'package:bico_certo/pages/auth/forgot_password_page.dart';
 
 // ----------------------------------------------------
-// PARTE 1: DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
+// DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
 // ----------------------------------------------------
 
 class LoginPage extends StatefulWidget {
@@ -17,17 +18,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class LoginPageState extends State<LoginPage> {
-  // Chave para validar o formulário
   final _formKey = GlobalKey<FormState>();
 
   // Controladores para pegar o texto dos campos de email e senha
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
-  // ----------------------------------------------------
-  // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
-  // ----------------------------------------------------
-  
+
   // Instância do AuthService para comunicação com a API
   final AuthService _authService = AuthService();
 
@@ -37,8 +33,9 @@ class LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       try {
         // Uso da API: Chama o método para obter informações do dispositivo
-        final Map<String, dynamic> deviceInfo = await _authService.getDeviceInfo();
-        
+        final Map<String, dynamic> deviceInfo = await _authService
+            .getDeviceInfo();
+
         // Uso da API: Chama o método de login do AuthService, passando os dados
         await _authService.login(
           email: _emailController.text,
@@ -50,10 +47,11 @@ class LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login realizado com sucesso!')),
           );
-        }
-        if (mounted) {
+
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomePage(isLoggedIn: true)),
+            MaterialPageRoute(
+              builder: (context) => const HomePage(isLoggedIn: true),
+            ),
           );
         }
       } catch (e) {
@@ -67,10 +65,6 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ----------------------------------------------------
-  // PARTE 3: CONSTRUÇÃO DA INTERFACE VISUAL (UI)
-  // ----------------------------------------------------
-  
   // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
@@ -88,96 +82,151 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center( // Centraliza o conteúdo verticalmente
-        child: SingleChildScrollView( // Permite a rolagem
-          padding: const EdgeInsets.symmetric(horizontal: 24.0), // Adiciona espaçamento interno
-          child: Form( 
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                
-                // Título
-                const Text(
-                  'LOGIN',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 25, 116, 172),
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Input
-                TextFormField(
-                  controller: _emailController,
-                  decoration: _inputDecoration('Email', Icons.email),
-                  validator: (value) => value!.isEmpty ? 'O email é obrigatório' : null,
-                ),
-                
-                const SizedBox(height: 15),
-                
-                // Input
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: _inputDecoration('Senha', Icons.lock),
-                  obscureText: true,
-                  validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
-                ),
-                
-                const SizedBox(height: 15),
-                
-                /*
-                // Botão de "Esqueceu a senha?" (UI) - AINDA NÃO APLICADO
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                      );
-                    },
-                    child: const Text(
-                      'Esqueceu a senha?',
-                      style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
-                    ),
-                  ),
-                ),
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-                const SizedBox(height: 10),
-                */
-                
-                // Botão Login chama a logica de Login
-                ElevatedButton(
-                  onPressed: _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 25, 116, 172),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  ),
-                  child: const Text(
-                    'Entrar',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Trocar para tela de Register
-                TextButton(
-                  // Usa o callback passado do AuthWrapper para mudar a tela
-                  onPressed: () => widget.onRegisterPressed(),
-                  child: const Text(
-                    'Ainda não possui uma conta? Registrar',
-                    style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
-                  ),
-                ),
-              ],
+    final double fontnormal = screenWidth * 0.035;
+    final double font = screenWidth * 0.04;
+    final double fonttitle = screenWidth * 0.1;
+
+    const blackblue = Color.fromARGB(255, 10, 94, 140);
+    const textblack = Color.fromARGB(255, 33, 33, 33);
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Transform.translate(
+              offset: const Offset(0, -50.0),
+              child: ClipPath(
+                clipper: WaveClipper(),
+                child: Container(color: blackblue),
+              ),
             ),
           ),
-        ),
+
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: screenHeight * 0.1),
+
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(30.0),
+
+                      child: Image.asset(
+                        'assets/images/icon.png',
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+
+                    // Título
+                    Text(
+                      'LOGIN',
+                      style: TextStyle(
+                        fontSize: fonttitle,
+                        fontWeight: FontWeight.bold,
+                        color: blackblue,
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.01),
+
+                    // Input
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: _inputDecoration('Email', Icons.email),
+                      validator: (value) =>
+                          value!.isEmpty ? 'O email é obrigatório' : null,
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Input
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: _inputDecoration('Senha', Icons.lock),
+                      obscureText: true,
+                      validator: (value) =>
+                          value!.isEmpty ? 'A senha é obrigatória' : null,
+                    ),
+
+                    // Botão Esqueceu a senha
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Esqueceu a senha?',
+                          style: TextStyle(
+                            color: textblack,
+                            fontSize: fontnormal,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Botão Login chama a logica de Login
+                    ElevatedButton(
+                      onPressed: _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: blackblue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.2,
+                          vertical: screenHeight * 0.015,
+                        ),
+                      ),
+                      child: Text(
+                        'ENTRAR',
+                        style: TextStyle(
+                          fontSize: font,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Trocar para tela de Register
+                    TextButton(
+                      // Usa o callback passado do AuthWrapper para mudar a tela
+                      onPressed: () => widget.onRegisterPressed(),
+                      child: Text(
+                        'Ainda não possui uma conta? Registrar',
+                        style: TextStyle(
+                          fontSize: font,
+                          fontFamily: 'Inter',
+                          color: const Color.fromARGB(255, 8, 109, 163),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.05),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

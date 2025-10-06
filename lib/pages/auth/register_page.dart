@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import 'package:bico_certo/services/auth_service.dart';
+import 'package:bico_certo/widgets/wave_clipper.dart';
 
 // ----------------------------------------------------
 // PARTE 1: DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
@@ -18,17 +19,16 @@ class RegisterPageState extends State<RegisterPage> {
   // Chave para validar o formulário
   final _formKey = GlobalKey<FormState>();
 
-
   // Controladores para pegar o texto dos campos
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  
+
   // ----------------------------------------------------
   // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
   // ----------------------------------------------------
-  
+
   // Instância do AuthService para comunicação com a API
   final AuthService _authService = AuthService();
 
@@ -45,6 +45,7 @@ class RegisterPageState extends State<RegisterPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Usuário cadastrado com sucesso!')),
           );
+          widget.onLoginPressed();
         }
       } catch (e) {
         if (mounted) {
@@ -55,7 +56,7 @@ class RegisterPageState extends State<RegisterPage> {
       }
     }
   }
-  
+
   // Validador
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
@@ -97,104 +98,162 @@ class RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView( // Permite a rolagem
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Form( 
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Título
-                const Text(
-                  'CADASTRO',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 25, 116, 172),
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Input
-                TextFormField(
-                  controller: _fullNameController,
-                  decoration: _inputDecoration('Nome Completo', Icons.person),
-                  validator: (value) => value!.isEmpty ? 'O nome completo é obrigatório' : null,
-                ),
-                
-                const SizedBox(height: 15),
-                
-                // Input
-                TextFormField(
-                  controller: _emailController,
-                  decoration: _inputDecoration('Email', Icons.email),
-                  validator: (value) => value!.isEmpty ? 'O email é obrigatório' : null,
-                ),
-                
-                const SizedBox(height: 15),
-                
-                // Input
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: _inputDecoration('Senha', Icons.lock),
-                  obscureText: true,
-                  validator: _validatePassword,
-                ),
-                
-                const SizedBox(height: 15),    
-                
-                // Input
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  decoration: _inputDecoration('Confirmar Senha', Icons.lock),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value!.isEmpty) {
-                      return 'Confirme sua senha';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'As senhas não coincidem';
-                    }
-                    return null;
-                  },
-                ),
-               
-                const SizedBox(height: 25),
-                
-                // Botão Cadastrar chama logica de Register
-                ElevatedButton(
-                  onPressed: _handleRegister,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 25, 116, 172),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  ),
-                  child: const Text(
-                    'Cadastrar',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-                // Trocar para tela de Login
-                TextButton(
-                  onPressed: () => widget.onLoginPressed(),
-                  child: const Text(
-                    'Já possui uma conta? Login',
-                    style: TextStyle(color: Color.fromARGB(255, 25, 116, 172)),
-                  ),
-                ),
-              ],
+    final double font = screenWidth * 0.04;
+    final double fonttitle = screenWidth * 0.1;
+
+    const blackblue = Color.fromARGB(255, 10, 94, 140);
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Transform.translate(
+              offset: const Offset(0, -50.0),
+              child: ClipPath(
+                clipper: WaveClipper(),
+                child: Container(color: blackblue),
+              ),
             ),
           ),
-        ),
+
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: screenHeight * 0.1),
+
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20.0),
+
+                      // CORREÇÃO: A imagem é o filho direto.
+                      child: Image.asset(
+                        'assets/images/icon.png',
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    // Título
+                    Text(
+                      'CADASTRO',
+                      style: TextStyle(
+                        fontSize: fonttitle,
+                        fontWeight: FontWeight.bold,
+                        color: blackblue,
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Input
+                    TextFormField(
+                      controller: _fullNameController,
+                      decoration: _inputDecoration(
+                        'Nome Completo',
+                        Icons.person,
+                      ),
+                      validator: (value) => value!.isEmpty
+                          ? 'O nome completo é obrigatório'
+                          : null,
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Input
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: _inputDecoration('Email', Icons.email),
+                      validator: (value) =>
+                          value!.isEmpty ? 'O email é obrigatório' : null,
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Input
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: _inputDecoration('Senha', Icons.lock),
+                      obscureText: true,
+                      validator: _validatePassword,
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Input
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      decoration: _inputDecoration(
+                        'Confirmar Senha',
+                        Icons.lock,
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Confirme sua senha';
+                        }
+                        if (value != _passwordController.text) {
+                          return 'As senhas não coincidem';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    SizedBox(height: screenHeight * 0.03),
+
+                    // Botão Cadastrar chama logica de Register
+                    ElevatedButton(
+                      onPressed: _handleRegister,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: blackblue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.2,
+                          vertical: screenHeight * 0.015,
+                        ),
+                      ),
+                      child: Text(
+                        'CADASTRAR',
+                        style: TextStyle(
+                          fontSize: font,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Trocar para tela de Login
+                    TextButton(
+                      onPressed: () => widget.onLoginPressed(),
+                      child: Text(
+                        'Já possui uma conta? Login',
+                        style: TextStyle(
+                          fontSize: font,
+                          fontFamily: 'Inter',
+                          color: const Color.fromARGB(255, 8, 109, 163),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.05),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
-
 // const SizedBox - apenas um espaçamento entre elementos para manter responsividade

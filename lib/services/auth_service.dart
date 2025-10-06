@@ -2,15 +2,14 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-// TODA LOGICA DE COMUNICAÇÃO COM BACKEND - HAVERÁ MUDANÇAS
+// TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
-  //final String baseUrl = 'http://127.0.0.1:8000'; // windows
-  final String baseUrl = 'http://10.0.2.2:8000'; // android
+  final String baseUrl = 'http://10.0.2.2:8000';
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
-  // METODOS ESSENCIAIS (Conexões com Login e Registro)
+  // METODOS ESSENCIAIS - TOKEN
   // ----------------------------------------------------------------------
   
   // Salva o token de acesso no armazenamento seguro do dispositivo
@@ -28,12 +27,17 @@ class AuthService {
     await _storage.delete(key: 'access_token');
   }
   
-  // Verifica se o usuário tem um token válido (está autenticado)
+  // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
     return token != null;
   }
 
+
+  // ----------------------------------------------------------------------
+  // lOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
+  // ----------------------------------------------------------------------
+  
   // Lógica de Registro
   Future<Map<String, dynamic>> register({
     required String email,
@@ -54,7 +58,8 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha no cadastro: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 
@@ -81,7 +86,8 @@ class AuthService {
       await saveToken(accessToken);
       return responseBody;
     } else {
-      throw Exception('Falha no login: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 
@@ -95,14 +101,11 @@ class AuthService {
       "app_version": "1.0.0"
     };
   }
-}
-  // ----------------------------------------------------------------------
-  // METODOS NÃO ESSENCIAIS (ainda)
-  // ----------------------------------------------------------------------
-  
-  /*
+
+  // Logout
   Future<void> logout() async {
     final token = await getToken();
+    
     if (token != null) {
       await http.post(
         Uri.parse('$baseUrl/auth/logout'),
@@ -110,10 +113,11 @@ class AuthService {
           'Authorization': 'Bearer $token',
         },
       );
-      await deleteToken();
     }
+    await deleteToken();
   }
 
+  // ESQUECEU A SENHA
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password/forgot'),
@@ -125,10 +129,12 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha ao solicitar redefinição: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 
+  // RESETAR SENHA
   Future<Map<String, dynamic>> resetPassword({
     required String resetToken,
     required String code,
@@ -148,7 +154,137 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha ao redefinir a senha: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
-  */
+
+
+  // ----------------------------------------------------------------------
+  // FUNÇÕES AUXILIARES PROTEGIDAS (Para requisições que exigem Token)
+  // ----------------------------------------------------------------------
+
+  // Função auxiliar para requisições GET protegidas por token.
+  Future<Map<String, dynamic>> _secureGet(String endpoint) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Retorna o corpo decodificado
+      return json.decode(response.body);
+    } else {
+      // Retorna o status code para que a camada UI trate erros específicos (ex: 401, 404).
+      throw Exception('Falha na requisição GET. Status: ${response.statusCode}');
+    }
+  }
+
+  // Função auxiliar para requisições POST protegidas por token.
+  Future<Map<String, dynamic>> _securePost(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+    
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Falha na requisição POST. Status: ${response.statusCode}');
+    }
+  }
+
+  
+// ----------------------------------------------------------------------
+// MÉTODOS CRIAÇÃO DE TRABALHO (CORRIGIDOS)
+// ----------------------------------------------------------------------
+
+Future<Map<String, dynamic>> createJob({
+  required String title,
+  required String description,
+  required String category,
+  required String location,
+  required String budget,
+  required DateTime? deadline,
+}) async {
+
+  // 1. Prepara o corpo (body) da requisição
+  final Map<String, dynamic> jobData = {
+    'title': title,
+    'description': description,
+    'category': category,
+    'location': location,
+    'budget': budget,
+    'deadline': deadline?.toIso8601String(),
+  };
+
+  // 2. Chama a função _securePost, que faz todo o trabalho:
+  //    a) Recupera o token
+  //    b) Verifica se o token existe (senão, lança exceção)
+  //    c) Adiciona o token no cabeçalho Authorization
+  //    d) Envia a requisição POST para o endpoint 'jobs/create'
+  //    e) Trata o status code e decodifica a resposta
+  final response = await _securePost('jobs/create', body: jobData);
+
+  // 3. Retorna a resposta, já tratada por _securePost
+  return response;
+}
+  // ----------------------------------------------------------------------
+  // NOVOS MÉTODOS WALLET (CORRIGIDOS)
+  // ----------------------------------------------------------------------
+
+  // Obtém os detalhes da carteira (GET /wallet/my-wallet)
+  Future<Map<String, dynamic>> getWalletDetails() async {
+    try {
+      // O resultado de _secureGet já é Map<String, dynamic>
+      final responseData = await _secureGet('wallet/my-wallet'); 
+      
+      // Se a resposta tiver a flag 'has_wallet', significa que é uma resposta de status (200 OK, mas sem carteira).
+      if (responseData['has_wallet'] == false) {
+         return responseData; // Retorna o Map que contém {"has_wallet": false}
+      }
+      
+      // Se a carteira existir, os detalhes devem estar no campo 'data'.
+      // Garante que retorna o Map<String, dynamic> ou um Map vazio {} se 'data' for nulo.
+      return responseData['data'] as Map<String, dynamic>? ?? {};
+
+    } catch (e) {
+      rethrow; 
+    }
+  }
+
+  // Cria uma nova carteira (POST /wallet/create)
+  Future<Map<String, dynamic>> createWallet({required String password}) async {
+    final Map<String, dynamic> body = {
+      "password": password,
+      "force_replace": false
+    };
+    final response = await _securePost('wallet/create', body: body);
+    return response['data'] as Map<String, dynamic>? ?? {}; 
+  }
+
+  // Obtém o saldo da carteira (GET /wallet/balance)
+  Future<Map<String, dynamic>> getBalance() async {
+    final response = await _secureGet('wallet/balance');
+    return response['data'] as Map<String, dynamic>? ?? {}; 
+  }
+
+}

@@ -12,7 +12,6 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isRegistering = false;
 
-  // Alternar entre as telas
   void _togglePage() {
     setState(() { _isRegistering = !_isRegistering;});
   }
