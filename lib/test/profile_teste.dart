@@ -210,11 +210,11 @@ class _SetProfileState extends State<Testing> {
               (route) => route.isFirst,
             );*/
           } else if (index == 2) {
-            Navigator.pushNamedAndRemoveUntil(
+            /*Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.setProfile,
               (route) => route.isFirst,
-            );
+            );*/
           }
         },
       ),
