@@ -58,7 +58,8 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha no cadastro: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 
@@ -85,7 +86,8 @@ class AuthService {
       await saveToken(accessToken);
       return responseBody;
     } else {
-      throw Exception('Falha no login: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 
@@ -127,7 +129,8 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha ao solicitar redefinição: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 
@@ -151,7 +154,8 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha ao redefinir a senha: ${response.statusCode}');
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse['detail']}');
     }
   }
 

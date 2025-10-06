@@ -47,8 +47,7 @@ class LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login realizado com sucesso!')),
           );
-        }
-        if (mounted) {
+
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const HomePage(isLoggedIn: true),
