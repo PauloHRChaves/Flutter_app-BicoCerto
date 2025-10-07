@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 //     sdk: flutter
 //   fl_chart: ^0.68.0
 //   google_fonts: ^6.2.1
-//
+// teste
 // Depois, execute `flutter pub get` no terminal.
 
 void main() {
