@@ -261,4 +261,8 @@ class _SetProfileState extends State<SetProfile> {
       ),
     );
   }
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
