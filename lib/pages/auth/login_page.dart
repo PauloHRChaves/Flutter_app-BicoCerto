@@ -85,22 +85,24 @@ class LoginPageState extends State<LoginPage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final double fontnormal = screenWidth * 0.035;
     final double font = screenWidth * 0.04;
     final double fonttitle = screenWidth * 0.1;
+    final double fontnormal = screenWidth * 0.038;
 
-    const blackblue = Color.fromARGB(255, 10, 94, 140);
-    const textblack = Color.fromARGB(255, 33, 33, 33);
+    const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
+    const Color lightBlue = Color.fromARGB(255, 0, 100, 155);
+    const Color textblack = Color.fromARGB(255, 33, 33, 33);
 
     return Scaffold(
+      appBar: AppBar(backgroundColor: darkBlue),
       body: Stack(
         children: [
           Positioned.fill(
             child: Transform.translate(
-              offset: const Offset(0, -50.0),
+              offset: const Offset(0, -130),
               child: ClipPath(
                 clipper: WaveClipper(),
-                child: Container(color: blackblue),
+                child: Container(color: darkBlue),
               ),
             ),
           ),
@@ -132,7 +134,7 @@ class LoginPageState extends State<LoginPage> {
                       style: TextStyle(
                         fontSize: fonttitle,
                         fontWeight: FontWeight.bold,
-                        color: blackblue,
+                        color: lightBlue,
                       ),
                     ),
 
@@ -185,7 +187,7 @@ class LoginPageState extends State<LoginPage> {
                     ElevatedButton(
                       onPressed: _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: blackblue,
+                        backgroundColor: lightBlue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -220,7 +222,7 @@ class LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    SizedBox(height: screenHeight * 0.05),
+                    SizedBox(height: screenHeight * 0.15),
                   ],
                 ),
               ),

@@ -11,7 +11,7 @@ import 'package:bico_certo/pages/create/create_form.dart';
 import 'package:flutter/material.dart';
 
 // TESTAR PAGINA PROFILE SEM BACKEND
-//import 'package:bico_certo/test/profile_teste.dart';
+import 'package:bico_certo/test/profile_teste.dart';
 
 class AppRoutes {
   static const String welcome = '/';
@@ -24,6 +24,8 @@ class AppRoutes {
   static const String createFormPage = '/order_form';
   static const String dashboardPage = '/dashboard';
 
+  // TESTAR PAGINA PROFILE SEM BACKEND
+  static const String profileteste = '/teste';
 
   static Map<String, Widget Function(BuildContext)> get routes => {
     welcome: (context) => const WelcomePage(),
@@ -35,5 +37,8 @@ class AppRoutes {
     orderInfoPage: (context) => const OrderInfoPage(),
     createFormPage: (context) => const CreateOrderPage(),
     dashboardPage: (context) => const DashboardScreen(),
+
+    // TESTAR PAGINA PROFILE SEM BACKEND
+    profileteste: (context) => const ProfileTeste(),
   };
 }

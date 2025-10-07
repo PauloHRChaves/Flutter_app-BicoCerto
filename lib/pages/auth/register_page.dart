@@ -105,30 +105,32 @@ class RegisterPageState extends State<RegisterPage> {
     final double font = screenWidth * 0.04;
     final double fonttitle = screenWidth * 0.1;
 
-    const blackblue = Color.fromARGB(255, 10, 94, 140);
+    const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
+    const Color lightBlue = Color.fromARGB(255, 0, 100, 155);
 
     return Scaffold(
+      appBar: AppBar(backgroundColor: darkBlue),
       body: Stack(
         children: [
           Positioned.fill(
             child: Transform.translate(
-              offset: const Offset(0, -50.0),
+              offset: const Offset(0, -130),
               child: ClipPath(
                 clipper: WaveClipper(),
-                child: Container(color: blackblue),
+                child: Container(color: darkBlue),
               ),
             ),
           ),
 
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(height: screenHeight * 0.1),
+                    SizedBox(height: screenHeight * 0.07),
 
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20.0),
@@ -147,7 +149,7 @@ class RegisterPageState extends State<RegisterPage> {
                       style: TextStyle(
                         fontSize: fonttitle,
                         fontWeight: FontWeight.bold,
-                        color: blackblue,
+                        color: lightBlue,
                       ),
                     ),
 
@@ -212,7 +214,7 @@ class RegisterPageState extends State<RegisterPage> {
                     ElevatedButton(
                       onPressed: _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: blackblue,
+                        backgroundColor: lightBlue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -246,7 +248,7 @@ class RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
 
-                    SizedBox(height: screenHeight * 0.05),
+                    SizedBox(height: screenHeight * 0.15),
                   ],
                 ),
               ),

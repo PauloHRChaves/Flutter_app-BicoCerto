@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:bico_certo/routes.dart';
-import 'package:bico_certo/widgets/bottom_navbar.dart';
 
 
 
@@ -11,6 +9,8 @@ class WalletPage extends StatefulWidget {
 
   @override
   State<WalletPage> createState() => _WalletPageState();
+
+  Duration({required int milliseconds}) {}
 }
 
 class _WalletPageState extends State<WalletPage> {
@@ -19,55 +19,32 @@ class _WalletPageState extends State<WalletPage> {
   // Estado para a Bottom Navigation Bar
   @override
   Widget build(BuildContext context) {
+    // Responsividade
+    final screenHeight = MediaQuery.of(context).size.height;
+
     const Color primaryColor = Color(0xFF000000); // Preto para o texto principal
     const Color secondaryColor = Color(0xFF656565); // Cinza escuro
     const Color accentColor = Color(0xFF1976D2); // Azul para links/ações
     const Color backgroundCard = Color(0xFFF7F7F7); // Fundo dos cards
+    
     return Scaffold(
-      // 1. App Bar (Topo)
-      appBar: AppBar(
-        // Fundo Branco
-        backgroundColor: Colors.white,
-        elevation: 0, 
-        centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: primaryColor),
-          onPressed: () {},
-        ),
-        title: const Row(
-          children: [
-            // Ícone da conta
-            CircleAvatar(
-              radius: 12,
-              backgroundColor: Color(0xFF1565C0),
-              child: Text('B', style: TextStyle(color: Colors.white, fontSize: 10)),
-            ),
-            SizedBox(width: 8),
-            // Nome da conta
-            Text(
-              'Account 2',
-              style: TextStyle(color: primaryColor, fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            Icon(Icons.keyboard_arrow_down, color: primaryColor, size: 20),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner, color: primaryColor),
-            onPressed: () {},
-          ),
-        ],
-      ),
-
-      // Fundo da tela em branco
       backgroundColor: Colors.white, 
+
+      appBar: AppBar(
+        backgroundColor: accentColor,
+        elevation: 1,
+        title: const Text(
+          "Carteira",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.05),
 
             // 2. Saldo Total
             const Text(
@@ -106,37 +83,7 @@ class _WalletPageState extends State<WalletPage> {
             if (_selectedTab == 0) _buildTokenList(secondaryColor),
           ],
         ),
-      ),
-      
-      // 6. Bottom Navigation Bar
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-
-          if (index == 0) {
-              Navigator.pushNamedAndRemoveUntil(
-              context, 
-              AppRoutes.sessionCheck, 
-              (route) => route.isFirst,
-            );
-          } else if (index == 1) {
-            
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, 
-              (route) => route.isFirst,
-            );
-          } else if (index == 2) {
-            
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.walletPage, 
-              (route) => route.isFirst,
-            );
-          } else if (index == 3) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
-              (route) => route.isFirst,
-            );
-          }
-        },
-      ),
-    
+      ), 
     );
   }
 
@@ -269,6 +216,4 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
   
-  // Widget para a Bottom Navigation Bar
-
 }

@@ -2,24 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
 
-
-  // Widget para a Bottom Navigation Bar em todas as paginas
+// Widget para a Bottom Navigation Bar em todas as paginas
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
 
-  const CustomBottomNavBar(
-    {    super.key,
+  const CustomBottomNavBar({
+    super.key,
     required this.currentIndex,
     required this.onTap,
-    }
-  );
+  });
 
   static const Color selectedColor = Color.fromARGB(255, 14, 67, 182);
   static const Color unselectedColor = Color.fromARGB(212, 105, 105, 105);
   static const Color barColor = Color.fromARGB(214, 255, 255, 255);
   static const Color centerBottomColor = Color.fromARGB(255, 255, 145, 0);
-
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = currentIndex == index;
@@ -28,8 +25,8 @@ class CustomBottomNavBar extends StatelessWidget {
     return InkWell(
       onTap: () => onTap(index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 8.0), 
-        constraints: const BoxConstraints(minWidth: 60), 
+        padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 8.0),
+        constraints: const BoxConstraints(minWidth: 60),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -37,7 +34,11 @@ class CustomBottomNavBar extends StatelessWidget {
             Icon(icon, color: color, size: 28),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: color, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal),
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
             ),
           ],
         ),
@@ -45,42 +46,48 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
+    // Responsividade
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return BottomAppBar(
       color: barColor,
-      height: 85,
+      height: screenHeight * 0.104,
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
       elevation: 10.0,
 
-      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildNavItem(Icons.home_filled, "Início", 0),
-          _buildNavItem(Icons.list, "Pedidos", 1),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
 
-        IconButton(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildNavItem(Icons.home_filled, "Início", 0),
+            _buildNavItem(Icons.list, "Pedidos", 1),
 
-          icon: const Icon(Icons.add_circle, size: 60, color: centerBottomColor),
-          onPressed: () {
-              Navigator.of(context).pushNamed(AppRoutes.orderInfoPage); //------------ TROQUEI A ROTA PATA TESTES, DEPOIS VOLTO PRA ROTA DE CRIAR PEDIDO
-          },
-          tooltip: 'Nova Ação',
-          padding: const EdgeInsets.only(bottom: 20),
+            IconButton(
+              icon: const Icon(
+                Icons.add_circle,
+                size: 60,
+                color: centerBottomColor,
+              ),
+              onPressed: () {
+                Navigator.of(context).pushNamed(AppRoutes.orderInfoPage);
+              },
+              tooltip: 'Nova Ação',
+              padding: const EdgeInsets.only(bottom: 20),
+            ),
 
+            _buildNavItem(Icons.wallet, "Carteira", 2),
+            _buildNavItem(Icons.person_outline, "Perfil", 3),
+          ],
         ),
-          
-          _buildNavItem(Icons.wallet, "Carteira", 2),
-          _buildNavItem(Icons.person_outline, "Perfil", 3),
-        ],
-      )
-    ),
-  );
+      ),
+    );
 
-/* //----------VERSÃO SIMPLES DO BOTTOM NAVBAR (SEM BOTÃO CENTRAL)-----------------
+    /* //----------VERSÃO SIMPLES DO BOTTOM NAVBAR (SEM BOTÃO CENTRAL)-----------------
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -103,8 +110,5 @@ class CustomBottomNavBar extends StatelessWidget {
     );
    
 */
- }
+  }
 }
-
-
-

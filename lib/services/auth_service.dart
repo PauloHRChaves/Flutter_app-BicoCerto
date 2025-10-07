@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
-  final String baseUrl = 'http://10.0.2.2:8000';
+  final String baseUrl = 'https://6d7015566907.ngrok-free.app/';
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
@@ -48,6 +48,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/register'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: jsonEncode(<String, String>{
         'email': email,
@@ -73,6 +74,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/login'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: jsonEncode(<String, dynamic>{
         'email': email,
