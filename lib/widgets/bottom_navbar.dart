@@ -80,35 +80,11 @@ class CustomBottomNavBar extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 20),
             ),
 
-            _buildNavItem(Icons.wallet, "Carteira", 2),
+            _buildNavItem(Icons.message_outlined, "Chats", 2),
             _buildNavItem(Icons.person_outline, "Perfil", 3),
           ],
         ),
       ),
     );
-
-    /* //----------VERSÃO SIMPLES DO BOTTOM NAVBAR (SEM BOTÃO CENTRAL)-----------------
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 85,
-      child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        selectedItemColor: const Color.fromARGB(255, 14, 67, 182),
-        unselectedItemColor: const Color.fromARGB(212, 105, 105, 105),
-        backgroundColor: const Color.fromARGB(214, 255, 255, 255),
-        onTap: onTap,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Início"),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: "Pedidos"),
-
-          
-          BottomNavigationBarItem(icon: Icon(Icons.wallet), label: "Carteira"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Perfil"),
-        ],
-      ),
-    );
-   
-*/
   }
 }

@@ -34,10 +34,13 @@ class OrdersPage extends StatelessWidget {
               (route) => route.isFirst,
             );
           } else if (index == 2) {
-            
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.walletPage, 
+            /* COLOCAR A ROTA DO CHAT AQUI
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.chatPage,
               (route) => route.isFirst,
             );
+            */
           } else if (index == 3) {
             Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
               (route) => route.isFirst,

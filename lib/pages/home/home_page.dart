@@ -351,10 +351,10 @@ class HomePage extends StatelessWidget {
               (route) => route.isFirst,
             );
           } else if (index == 2) {
-            /*
+            /* COLOCAR A ROTA DO CHAT AQUI
             Navigator.pushNamedAndRemoveUntil(
               context,
-              AppRoutes.walletPage,
+              AppRoutes.chatPage,
               (route) => route.isFirst,
             );
             */

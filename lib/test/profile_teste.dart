@@ -6,7 +6,7 @@ import 'package:bico_certo/widgets/bottom_navbar.dart';
 import 'package:bico_certo/routes.dart';
 //import 'package:bico_certo/services/auth_service.dart';
 //import 'package:bico_certo/services/auth_guard.dart';
-import 'package:bico_certo/pages/wallet/wallet_page.dart';
+//import 'package:bico_certo/pages/wallet/wallet_page.dart';
 
 class ProfileTeste extends StatefulWidget {
   const ProfileTeste({super.key});
@@ -19,27 +19,25 @@ class _SetProfileState extends State<ProfileTeste> {
   //Lógica de navegação e checagem da Wallet
   //final AuthService _authService = AuthService();
   void _checkAndNavigateToWallet() async {
-    //final details = await _authService.getWalletDetails();
 
-    //if (details['has_wallet'] == true) {
+    //final details = await _authService.getWalletDetails(); 
     Future.delayed(const Duration(milliseconds: 150), () {
-      if (mounted) {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const WalletPage()));
-      }
+
+      /*if (details['has_wallet'] == true) {
+          if (mounted) {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => const WalletPage()));
+          }
+      }else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Carteira não encontrada. Por favor, crie uma.')),
+          );
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const CreateWalletPage()),
+          );
+        }
+      }*/
     });
-    //}
-    /*else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Carteira não encontrada. Por favor, crie uma.')),
-        );
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const CreateWalletPage()), // pagina de Criação da Wallet
-        );
-      }
-    }*/
   }
 
   // Funções utilitárias para construir os elementos do design
@@ -220,9 +218,13 @@ class _SetProfileState extends State<ProfileTeste> {
     final int jobdone = 0;
     final double estrelas = 2;
 
+    final img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR6MNssSL4Z1V7W4tY8H8BkItscxMEegw0ew&s";
+
     // Responsividade
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+
+    const double avatarSize = 100.0;
 
     final double fonttitle = screenWidth * 0.044;
     final double font = screenWidth * 0.042;
@@ -251,7 +253,7 @@ class _SetProfileState extends State<ProfileTeste> {
           IconButton(
             icon: const Icon(
               Icons.more_vert,
-              color: Color.fromARGB(255, 105, 105, 105),
+              color: Colors.white,
             ),
 
             // ⚠️ LOGICA NÃO APLICADA
@@ -275,21 +277,22 @@ class _SetProfileState extends State<ProfileTeste> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Avatar
+                // ⚠️ IMAGEM ENVIADA PELO USUÁRIO 
                 Container(
-                  width: screenWidth,
-                  height: screenHeight * 0.11,
+                  width: avatarSize,
+                  height: avatarSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: primaryBlue, width: 3),
                     color: Colors.black,
-                  ),
-
-                  // ⚠️ -> Icon tem que ser substituido por uma foto, variavel atribuida pelo usuario
-                  child: const Icon(
-                    Icons.person,
-                    size: 50,
-                    color: Colors.white,
+                    
+                    image: DecorationImage(
+                      image: NetworkImage(
+                        img,
+                      ),
+                      fit: BoxFit.cover, 
+                      alignment: Alignment.center, 
+                    ),
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.01),
@@ -435,7 +438,6 @@ class _SetProfileState extends State<ProfileTeste> {
               ],
             ),
           ),
-
           SizedBox(height: screenHeight * 0.01),
 
           // --- Ganhos Totais da Semana ---
@@ -549,17 +551,19 @@ class _SetProfileState extends State<ProfileTeste> {
               (route) => route.isFirst,
             );
           } else if (index == 2) {
-            /*
+            /* COLOCAR A ROTA DO CHAT AQUI
             Navigator.pushNamedAndRemoveUntil(
               context,
-              AppRoutes.walletPage,
+              AppRoutes.chatPage,
               (route) => route.isFirst,
-            );*/
+            );
+            */
           } else if (index == 3) {
             /*
               Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
                 (route) => route.isFirst,
-              );*/
+              );
+            */
           }
         },
       ),

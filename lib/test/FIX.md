@@ -1,5 +1,5 @@
 # Pagina Profile:
-Primeiramente observar na bottomNavigationBar da home_page.dart o seguinte:
+### Primeiramente observar na bottomNavigationBar da home_page.dart o seguinte:
 ```
 else if (index == 3) {
     Navigator.pushNamedAndRemoveUntil(context,
@@ -42,3 +42,13 @@ else {
     }
 }`
 ```
+<br>
+
+# Pagina Wallet
+### Fazer uma pagina apenas para UI
+
+- Verificar error:
+
+<pre>
+Error de autenticação ou conexão:   LateInitializationError:Field'_time@53303382' has not been initialized
+</pre>
