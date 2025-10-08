@@ -19,25 +19,27 @@ class _SetProfileState extends State<ProfilePage> {
   //Lógica de navegação e checagem da Wallet
   final AuthService _authService = AuthService();
   void _checkAndNavigateToWallet() async {
-
     final details = await _authService.getWalletDetails(); 
-    Future.delayed(const Duration(milliseconds: 150), () {
 
-      if (details['has_wallet'] == true) {
-          if (mounted) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => const WalletPage()));
-          }
-      }else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Carteira não encontrada. Por favor, crie uma.')),
-          );
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const CreateWalletPage()),
-          );
-        }
+    final bool walletExists = !(details.containsKey('has_wallet') && details['has_wallet'] == false);
+    /* caso A: A carteira NÃO existe: walletExists = !true -> condição de falha é VERDADEIRA
+       caso B: A carteira Existe:  walletExists = !false -> condição de falha é FALSA
+    */
+    
+    if (mounted) {
+      if (walletExists) {
+        // Carteira existe ou os detalhes vieram
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const WalletPage()));
+      } else {
+        // Carteira não existe (o retorno foi {'has_wallet': false})
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Carteira não encontrada. Por favor, crie uma.')),
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const CreateWalletPage()),
+        );
       }
-    });
+    }
   }
 
   // Funções utilitárias para construir os elementos do design
