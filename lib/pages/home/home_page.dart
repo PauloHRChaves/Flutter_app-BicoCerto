@@ -363,7 +363,7 @@ class HomePage extends StatelessWidget {
             // AppRoutes.profilePage   -> pagina de uso
             Navigator.pushNamedAndRemoveUntil(
               context,
-              AppRoutes.profileteste,
+              AppRoutes.profilePage,
               (route) => route.isFirst,
             );
           }

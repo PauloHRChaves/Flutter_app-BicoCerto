@@ -22,12 +22,7 @@ import 'package:bico_certo/pages/create/create_info.dart';
 import 'package:bico_certo/pages/create/create_form.dart';
 
 
-// TESTAR PAGINA SEM BACKEND 🚧
-import 'package:bico_certo/test/profile_teste.dart'; // Perfil
-
 class AppRoutes {
-// TESTAR PAGINA SEM BACKEND 🚧
-  static const String profileteste='/teste';
 
   // Rotas Essenciais
   static const String welcome = '/';
@@ -56,8 +51,7 @@ class AppRoutes {
 
 
   static Map<String, Widget Function(BuildContext)> get routes => {
-    // TESTAR PAGINA SEM BACKEND 🚧
-    profileteste: (context) => const ProfileTeste(),
+
 
     // Rotas Essenciais
     welcome: (context) => const WelcomePage(),

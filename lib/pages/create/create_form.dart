@@ -3,12 +3,12 @@ import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:bico_certo/widgets/password_request.dart'; 
 
-// Este widget simula a galeria de fotos que você já criou.
-// Em um projeto real, você usaria o seu PhotoGalleryWidget.
+
 class PhotoInputWidget extends StatelessWidget {
   
-  // Lista de URLs das fotos (simulação)
+
   final List<String> photoUrls;
   final VoidCallback onAddPhoto;
 
@@ -77,15 +77,11 @@ class PhotoInputWidget extends StatelessWidget {
   }
 }
 
-
 class CurrencyInputFormatter extends TextInputFormatter {
-  
-  // O construtor garante que o pacote intl esteja disponível para formatar
-  // com as configurações regionais do Brasil.
-  // IMPORTANTE: O pacote 'intl' AINDA É NECESSÁRIO para a classe NumberFormat.
+
   final NumberFormat formatter = NumberFormat.currency(
-    locale: 'pt_BR', // Configuração regional do Brasil
-    symbol: '',      // Não usamos o símbolo aqui, apenas os separadores
+    locale: 'pt_BR', 
+    symbol: '',      
     decimalDigits: 2,
   );
 
@@ -126,8 +122,6 @@ class CurrencyInputFormatter extends TextInputFormatter {
   }
 }
 
-
-
 // -------------------------------------------------------------
 // PÁGINA CreateJobPage
 // -------------------------------------------------------------
@@ -139,15 +133,14 @@ class CreateJobPage extends StatefulWidget {
 }
 
 class _CreateOrderPageState extends State<CreateJobPage> {
+
+
   // 1. Controladores e Variáveis de Estado
-  final TextEditingController _titleJobControlle = TextEditingController();
+  final TextEditingController _titleJobController = TextEditingController();
   final TextEditingController _descriptionJobController = TextEditingController();
   final TextEditingController _locationJobController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
-
-  // ------------ Ver controlador para as fotos
-
-  
+ 
   String? _selectedCategory; // Estado da Categoria (Dropdown)
   DateTime? _selectedDate; // Estado da Data de Término
   String _selectedDateFormated = '';
@@ -192,15 +185,16 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
   }
 
+
   // --------------------------------------------------------------------------------
   //                       LÓGICA DA COLETA E ENVIO DE DADOS
   // --------------------------------------------------------------------------------
  
-  void _submitOrder() async {
+  Future<void> _submitOrder(String password) async {
     final AuthService _authService = AuthService();
     
     //-- 2. Validação básica
-    if (_titleJobControlle.text.isEmpty || _selectedCategory == null) {
+    if (_titleJobController.text.isEmpty || _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, preencha Título e Categoria.')),
       );
@@ -209,21 +203,21 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     
     
     try{  
-    
+      // Chama o serviço de API para criar o trabalho
       await _authService.createJob(
-        title: _titleJobControlle.text,
+        title: _titleJobController.text,
         description: _descriptionJobController.text,
         category: _selectedCategory!,
         location: _locationJobController.text,
         budget: _treatedBugdet(_budgetController.text), 
         deadline: _selectedDateFormated,
-        password: 'Senha1233.', 
+        password: password, 
       );
       
     //------------------------CAMPO DE TESTES DE ENVIO -----------------------------
     /*
       final data = {
-      'title': _titleJobControlle.text,
+      'title': _titleJobController.text,
       'category': _selectedCategory,
       'location': _locationJobController.text,
       'budget': _treatedBugdet(_budgetController.text),
@@ -239,20 +233,66 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     //------------------------------------------------------------------------------
 
       if (mounted) {
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trabalho criado com sucesso!.', style: TextStyle(fontSize: 16, color: Colors.white),), backgroundColor: Colors.green, duration: Duration(seconds: 4)),
+          const SnackBar(content: Text('Trabalho criado com sucesso!.', 
+          style: TextStyle(fontSize: 16, color: Colors.white),), 
+          backgroundColor: Colors.green, 
+          duration: Duration(seconds: 4)),
         );
         Navigator.of(context).pushNamed(AppRoutes.sessionCheck); // Volta para a tela anterior
       }
     } catch (e) {
       print('Erro ao criar pedido: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao criar pedido: ${e.toString()}', style: const TextStyle(fontSize: 16, color: Colors.white),), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
+        SnackBar(content: Text('Erro ao criar pedido: ${e.toString()}', 
+        style: const TextStyle(fontSize: 16, color: Colors.white),), 
+        backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
       );
     }
   }
   // ---------------------------FIM DA LÓGICA DE ENVIO-------------------------------
+  
+  void _showConfirmationModal(
+    BuildContext context, 
+    String buttonText, 
+    ConfirmationCallback onConfirm
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: PasswordConfirmationWidget(
+            onConfirm: onConfirm,
+            confirmationText: buttonText,
+          ),
+        );
+      },
+    );
+  }
 
+  void _handleJobCreationAttempt() {
+    // 1. Validação de campos da página de Create Job
+    if (_titleJobController.text.isEmpty || _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha todos os campos.')),
+      );
+      return; // Para aqui se a validação falhar
+    }
+
+    // 2. Se a validação passar, mostra o modal/widget de confirmação
+    _showConfirmationModal(
+      context, 
+      "Criar Novo Trabalho", 
+      _submitOrder // <-- Passamos a função adaptada!
+    );
+  }
+  
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -268,7 +308,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Título do Pedido
-            _buildTextField("Título do Pedido", _titleJobControlle, "Ex: Conserto de vazamento no banheiro"),
+            _buildTextField("Título do Pedido", _titleJobController, "Ex: Conserto de vazamento no banheiro"),
             const SizedBox(height: 20),
 
             // Categoria do Serviço (Dropdown)
@@ -300,7 +340,9 @@ class _CreateOrderPageState extends State<CreateJobPage> {
             // Botão de Envio
             Center(
               child: ElevatedButton(
-                onPressed: _submitOrder,
+                onPressed: (){
+                  _handleJobCreationAttempt();
+                },
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50), // Botão de largura total
                   backgroundColor: const Color.fromARGB(255, 14, 67, 182),
@@ -438,7 +480,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
     
   }
-
+  // Campo de Entrada de Valor (Moeda) - Sem Pacote Externo
   Widget _buildCurrencyFieldWithoutPackage(
     String label,
     TextEditingController controller,
@@ -480,7 +522,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
   @override
   void dispose() {
-    _titleJobControlle.dispose();
+    _titleJobController.dispose();
     _descriptionJobController.dispose();
     _locationJobController.dispose();
     super.dispose();
