@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
+// TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
   final String baseUrl = 'http://10.0.2.2:8000';
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
+  // METODOS ESSENCIAIS - TOKEN
   // METODOS ESSENCIAIS - TOKEN
   // ----------------------------------------------------------------------
   
@@ -28,10 +30,17 @@ class AuthService {
   }
   
   // Verifica se o usuário tem um token válido
+  // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
     return token != null;
   }
+
+
+  // ----------------------------------------------------------------------
+  // lOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
+  // ----------------------------------------------------------------------
+  
 
 
   // ----------------------------------------------------------------------
@@ -103,8 +112,11 @@ class AuthService {
   }
 
   // Logout
+
+  // Logout
   Future<void> logout() async {
     final token = await getToken();
+    
     
     if (token != null) {
       await http.post(
@@ -115,8 +127,10 @@ class AuthService {
       );
     }
     await deleteToken();
+    await deleteToken();
   }
 
+  // ESQUECEU A SENHA
   // ESQUECEU A SENHA
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
@@ -134,6 +148,7 @@ class AuthService {
     }
   }
 
+  // RESETAR SENHA
   // RESETAR SENHA
   Future<Map<String, dynamic>> resetPassword({
     required String resetToken,

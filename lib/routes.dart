@@ -24,7 +24,6 @@ class AppRoutes {
   static const String createFormPage = '/order_form';
   static const String dashboardPage = '/dashboard';
 
-
   static Map<String, Widget Function(BuildContext)> get routes => {
     welcome: (context) => const WelcomePage(),
     sessionCheck: (context) => const SessionCheckerPage(),
@@ -37,3 +36,4 @@ class AppRoutes {
     dashboardPage: (context) => const DashboardScreen(),
   };
 }
+
