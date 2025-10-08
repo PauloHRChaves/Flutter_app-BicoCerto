@@ -23,8 +23,9 @@ class RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  bool _passwordVisible = false;
 
   // ----------------------------------------------------
   // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
@@ -84,6 +85,21 @@ class RegisterPageState extends State<RegisterPage> {
 
   // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
   InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
+
+  // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
+  InputDecoration _inputDecorationPass(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
@@ -176,27 +192,49 @@ class RegisterPageState extends State<RegisterPage> {
                       validator: (value) =>
                           value!.isEmpty ? 'O email é obrigatório' : null,
                     ),
-
                     SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
                       controller: _passwordController,
-                      decoration: _inputDecoration('Senha', Icons.lock),
-                      obscureText: true,
+                      decoration: _inputDecorationPass('Senha', Icons.lock).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      obscureText: !_passwordVisible,
                       validator: _validatePassword,
                     ),
-
                     SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
                       controller: _confirmPasswordController,
-                      decoration: _inputDecoration(
-                        'Confirmar Senha',
-                        Icons.lock,
+                      decoration: _inputDecorationPass('Confirmar Senha', Icons.lock).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: !_passwordVisible,
+                      
                       validator: (value) {
                         if (value!.isEmpty) {
                           return 'Confirme sua senha';
@@ -207,7 +245,6 @@ class RegisterPageState extends State<RegisterPage> {
                         return null;
                       },
                     ),
-
                     SizedBox(height: screenHeight * 0.03),
 
                     // Botão Cadastrar chama logica de Register

@@ -20,6 +20,8 @@ class LoginPage extends StatefulWidget {
 class LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
+  bool _passwordVisible = false;
+
   // Controladores para pegar o texto dos campos de email e senha
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -66,7 +68,22 @@ class LoginPageState extends State<LoginPage> {
   }
 
   // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(String label, IconData icon,) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
+
+  // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
+  InputDecoration _inputDecorationPass(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
@@ -153,10 +170,22 @@ class LoginPageState extends State<LoginPage> {
                     // Input
                     TextFormField(
                       controller: _passwordController,
-                      decoration: _inputDecoration('Senha', Icons.lock),
-                      obscureText: true,
-                      validator: (value) =>
-                          value!.isEmpty ? 'A senha é obrigatória' : null,
+                      decoration: _inputDecorationPass('Senha', Icons.lock).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      obscureText: !_passwordVisible,
+                      validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
                     ),
 
                     // Botão Esqueceu a senha
