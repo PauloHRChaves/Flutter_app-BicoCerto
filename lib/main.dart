@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'services/local_storage_service.dart';
-import 'routes.dart';
+import 'package:bico_certo/services/local_storage_service.dart';
+import 'package:bico_certo/routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
