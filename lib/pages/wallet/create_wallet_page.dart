@@ -118,9 +118,8 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
               // Botão Importar
               TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Funcionalidade de importação a ser implementada.")),
-                  );
+                  // Navega para a proxima pagina import wallet page:
+                  Navigator.pushNamed(context, AppRoutes.importWalletPage);
                 },
                 child: const Text("Importar Carteira Existente", style: TextStyle(color: primaryBlue)),
               ),
