@@ -47,8 +47,37 @@ else {
 # Pagina Wallet
 ### Fazer uma pagina apenas para UI
 
-- Verificar error:
+Error ao criar wallet e buscar wallet corrigidos.
 
+Wallet_page: mudaças no _timer, basicamente trocando **late Timer _timer;**, que estava causando error, por **Timer? _timer;**
 <pre>
 Error de autenticação ou conexão:   LateInitializationError:Field'_time@53303382' has not been initialized
 </pre>
+
+
+Auth_service antigo:
+```
+    Future<Map<String, dynamic>> getWalletDetails() async {
+    try {
+      final responseData = await _secureGet('wallet/my-wallet');
+      
+      // CASO A: API envia o status de "não tem carteira"
+      if (responseData.containsKey('has_wallet')) {
+        return responseData; 
+      }
+      
+      // CASO B: API envia os detalhes da carteira (Carteira existe).
+      // Cria um novo Map, injetando o status 'has_wallet: true'
+      final Map<String, dynamic> walletData = responseData['data'] as Map<String, dynamic>? ?? {};
+      
+      // Retorna os dados da carteira juntamente com o status de sucesso.
+      return {
+        'has_wallet': true,
+        ...walletData, // Adiciona o resto dos dados da carteira
+      };
+
+    } catch (e) {
+      rethrow; 
+    }
+  }
+```

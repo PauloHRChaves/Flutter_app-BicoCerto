@@ -275,15 +275,27 @@ Future<Map<String, dynamic>> createJob({
     try {
       final responseData = await _secureGet('wallet/my-wallet');
       
-      // VERIFICAÇÃO PRINCIPAL: 
-      // Se a resposta tem 'has_wallet', retorna o objeto completo para a UI verificar o status.
+      // CASO A: API envia o status de "não tem carteira"
       if (responseData.containsKey('has_wallet')) {
-         return responseData; 
+        // Retorna {'has_wallet': false}
+        return responseData;
       }
       
-      // Se 'has_wallet' NÃO EXISTE, a carteira existe, e os detalhes estão em 'data'.
-      // Retorna APENAS o conteúdo de 'data', garantindo que é um Map.
-      return responseData['data'] as Map<String, dynamic>? ?? {};
+      // CASO B: API envia os detalhes da carteira (Carteira existe).
+      final walletDataRaw = responseData['data'];
+      
+      if (walletDataRaw == null || walletDataRaw is! Map<String, dynamic>) {
+          throw const FormatException("API retornou sucesso, mas houve falha ao enviar os dados.");
+      }
+      
+      // Conversão segura após a verificação
+      final Map<String, dynamic> walletData = walletDataRaw; 
+
+      // Retorna os dados da carteira juntamente com o status de sucesso.
+      return {
+        'has_wallet': true,
+        ...walletData,
+      };
 
     } catch (e) {
       rethrow; 
