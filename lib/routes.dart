@@ -10,12 +10,12 @@ import 'package:bico_certo/pages/auth/reset_password_page.dart';
 import 'package:bico_certo/pages/profile/dashboard.dart';
 import 'package:bico_certo/pages/profile/profile.dart';
 // WALLET
+import 'package:bico_certo/pages/wallet/import_wallet_page.dart'; 
 import 'package:bico_certo/pages/wallet/create_wallet_page.dart';
 import 'package:bico_certo/pages/wallet/wallet_page.dart'; 
     // IMPORTS PARA AS PÁGINAS DE TRANSAÇÃO
 import 'package:bico_certo/pages/wallet/send_page.dart';
 import 'package:bico_certo/pages/wallet/receive_page.dart';
-
 // JOBS
 import 'package:bico_certo/pages/order/order_page.dart';
 import 'package:bico_certo/pages/create/create_info.dart';
@@ -48,6 +48,7 @@ class AppRoutes {
   static const String forgotPasswordPage = '/forgot-password';
   static const String resetPasswordPage = '/reset-password';
   static const String createWalletPage = '/create-wallet';
+  static const String importWalletPage = '/import-wallet';
 
   // NOVAS ROTAS PARA AS AÇÕES DE CARTEIRA
   static const String sendPage = '/send-money';
@@ -79,5 +80,6 @@ class AppRoutes {
     // Rotas Send e Receive
     sendPage: (context) => const SendPage(), 
     receivePage: (context) => const ReceivePage(),
+    importWalletPage: (context) => const ImportWalletPage(),
   };
 }

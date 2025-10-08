@@ -26,7 +26,7 @@ class RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _passwordVisible = false;
-
+  bool _passwordVisible2 = false;
   // ----------------------------------------------------
   // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
   // ----------------------------------------------------
@@ -222,18 +222,18 @@ class RegisterPageState extends State<RegisterPage> {
                       decoration: _inputDecorationPass('Confirmar Senha', Icons.lock).copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _passwordVisible
+                            _passwordVisible2
                                 ? Icons.visibility
                                 : Icons.visibility_off,
                           ),
                           onPressed: () {
                             setState(() {
-                              _passwordVisible = !_passwordVisible;
+                              _passwordVisible2 = !_passwordVisible2;
                             });
                           },
                         ),
                       ),
-                      obscureText: !_passwordVisible,
+                      obscureText: !_passwordVisible2,
                       
                       validator: (value) {
                         if (value!.isEmpty) {

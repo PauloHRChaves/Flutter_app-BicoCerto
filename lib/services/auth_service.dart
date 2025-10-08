@@ -268,4 +268,21 @@ class AuthService {
     final response = await _secureGet('wallet/balance');
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
+
+  // 4. NEW -> Metodo para importar Carteira
+  Future<Map<String, dynamic>> importWalletFromPrivateKey({
+    required String privateKey,
+    required String password,
+  }) async {
+    final Map<String, dynamic> body = {
+      "private_key": privateKey,
+      "password": password,
+      "force_replace": true,
+    };
+    // Usamos a sua função auxiliar _securePost que já trata token e headers
+    final response = await _securePost('wallet/import/private-key', body: body);
+    
+    // retorna o "data" que contem wallet_id / adress
+    return response['data'] as Map<String, dynamic>? ?? {};
+  }
 }
