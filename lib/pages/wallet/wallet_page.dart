@@ -44,7 +44,7 @@ class WalletPage extends StatefulWidget {
 
 class _WalletPageState extends State<WalletPage> {
   final AuthService _authService = AuthService();
-  late Timer _timer; 
+  Timer? _timer; 
   
   bool _isLoading = true;
   String _balance = "R\$ 0,00 BRL"; // Corrigido para BRL
@@ -59,10 +59,22 @@ class _WalletPageState extends State<WalletPage> {
 
   @override
   void dispose() {
-    if (mounted && _timer.isActive) {
-        _timer.cancel(); 
-    }
+    _timer?.cancel(); 
     super.dispose();
+  }
+
+  void _startPolling() {
+    _timer?.cancel();
+      
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      // Busca silenciosa só ocorre se o widget ainda estiver em tela
+      if (mounted) {
+        _fetchWalletData(showLoading: false);
+      } else {
+        // Se o widget foi desmontado, para o timer
+        timer.cancel();
+      }
+    });
   }
   
   // --- FUNÇÃO DE NAVEGAÇÃO AUXILIAR ---
@@ -103,17 +115,19 @@ class _WalletPageState extends State<WalletPage> {
     try {
       final details = await _authService.getWalletDetails(); 
 
-      if (details.containsKey('has_wallet') && details['has_wallet'] == false) {
-        if (mounted) {
-            Navigator.pushReplacementNamed(
-                context,
-                AppRoutes.createWalletPage,
-            );
+      final bool walletExists = 
+          !(details.containsKey('has_wallet') && details['has_wallet'] == false);
+
+      if (mounted) {
+        if (!walletExists) {
+          Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.createWalletPage,
+          );
+        } else {
+          _fetchWalletData(showLoading: true); 
+          _startPolling();
         }
-      } else {
-        // Carteira existe: Carrega dados e inicia o Polling
-        _fetchWalletData(showLoading: true); 
-        _startPolling();
       }
     } catch (e) {
       if (mounted) {
@@ -126,15 +140,6 @@ class _WalletPageState extends State<WalletPage> {
         );
       }
     }
-  }
-
-  void _startPolling() {
-      if (mounted && (this as dynamic)._timer != null && _timer.isActive) {
-          _timer.cancel();
-      }
-      _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-          _fetchWalletData(showLoading: false); // Busca silenciosa
-      });
   }
 
   void _fetchWalletData({bool showLoading = true}) async {
@@ -299,7 +304,7 @@ class _WalletPageState extends State<WalletPage> {
           } else if (index == 1) {
             Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, (route) => route.isFirst);
           } else if (index == 2) {
-            // Já estamos na Carteira, não faz nada
+            // tela de chat
           } else if (index == 3) {
              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, (route) => route.isFirst);
           }
