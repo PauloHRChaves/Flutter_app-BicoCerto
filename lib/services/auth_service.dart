@@ -1,3 +1,5 @@
+// lib/services/auth_service.dart
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -5,7 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
-  final String baseUrl = 'http://10.0.2.2:8000';
+  // Use o endereço do emulador Android para se conectar à sua máquina.
+  final String baseUrl = 'http://10.0.2.2:8000'; 
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
@@ -33,12 +36,73 @@ class AuthService {
     return token != null;
   }
 
+  // ----------------------------------------------------------------------
+  // FUNÇÕES AUXILIARES PROTEGIDAS (Para requisições que exigem Token)
+  // ----------------------------------------------------------------------
+
+  // Função auxiliar para requisições GET protegidas por token.
+  Future<Map<String, dynamic>> _secureGet(String endpoint) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição GET. Status: ${response.statusCode}');
+    }
+  }
+
+  // Função auxiliar para requisições POST protegidas por token.
+  Future<Map<String, dynamic>> _securePost(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+    
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição POST. Status: ${response.statusCode}');
+    }
+  }
 
   // ----------------------------------------------------------------------
-  // lOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
+  // LOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
   // ----------------------------------------------------------------------
   
-  // Lógica de Registro
+  // Lógica de Registro (Omitida para brevidade)
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
@@ -59,7 +123,7 @@ class AuthService {
       return json.decode(response.body);
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception('${jsonResponse['detail']}');
+      throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no registro.');
     }
   }
 
@@ -87,7 +151,7 @@ class AuthService {
       return responseBody;
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception('${jsonResponse['detail']}');
+      throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no login.');
     }
   }
 
@@ -130,7 +194,7 @@ class AuthService {
       return json.decode(response.body);
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception('${jsonResponse['detail']}');
+      throw Exception(jsonResponse['detail'] ?? 'Falha ao solicitar redefinição.');
     }
   }
 
@@ -155,81 +219,33 @@ class AuthService {
       return json.decode(response.body);
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception('${jsonResponse['detail']}');
+      throw Exception(jsonResponse['detail'] ?? 'Falha ao redefinir a senha.');
     }
   }
 
-
   // ----------------------------------------------------------------------
-  // FUNÇÕES AUXILIARES PROTEGIDAS (Para requisições que exigem Token)
+  // NOVOS MÉTODOS DE PERFIL E WALLET
   // ----------------------------------------------------------------------
 
-  // Função auxiliar para requisições GET protegidas por token.
-  Future<Map<String, dynamic>> _secureGet(String endpoint) async {
-    final token = await getToken();
-    if (token == null) {
-      throw Exception('Usuário não autenticado.');
-    }
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/$endpoint'),
-      headers: <String, String>{
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      // Retorna o corpo decodificado
-      return json.decode(response.body);
-    } else {
-      // Retorna o status code para que a camada UI trate erros específicos (ex: 401, 404).
-      throw Exception('Falha na requisição GET. Status: ${response.statusCode}');
-    }
+  // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
+  Future<Map<String, dynamic>> getUserProfile() async {
+    final responseData = await _secureGet('auth/me');
+    return responseData['data'] as Map<String, dynamic>? ?? {}; 
   }
-
-  // Função auxiliar para requisições POST protegidas por token.
-  Future<Map<String, dynamic>> _securePost(String endpoint, {Map<String, dynamic>? body}) async {
-    final token = await getToken();
-    if (token == null) {
-      throw Exception('Usuário não autenticado.');
-    }
-    
-    final Map<String, String> headers = {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer $token',
-    };
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/$endpoint'),
-      headers: headers,
-      body: body != null ? jsonEncode(body) : null,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Falha na requisição POST. Status: ${response.statusCode}');
-    }
-  }
-
-
-  // ----------------------------------------------------------------------
-  // NOVOS MÉTODOS WALLET (CORRIGIDOS)
-  // ----------------------------------------------------------------------
-
-  // Obtém os detalhes da carteira (GET /wallet/my-wallet)
+  
+  // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
   Future<Map<String, dynamic>> getWalletDetails() async {
     try {
-      // O resultado de _secureGet já é Map<String, dynamic>
-      final responseData = await _secureGet('wallet/my-wallet'); 
+      final responseData = await _secureGet('wallet/my-wallet');
       
-      // Se a resposta tiver a flag 'has_wallet', significa que é uma resposta de status (200 OK, mas sem carteira).
-      if (responseData['has_wallet'] == false) {
-         return responseData; // Retorna o Map que contém {"has_wallet": false}
+      // VERIFICAÇÃO PRINCIPAL: 
+      // Se a resposta tem 'has_wallet', retorna o objeto completo para a UI verificar o status.
+      if (responseData.containsKey('has_wallet')) {
+         return responseData; 
       }
       
-      // Se a carteira existir, os detalhes devem estar no campo 'data'.
-      // Garante que retorna o Map<String, dynamic> ou um Map vazio {} se 'data' for nulo.
+      // Se 'has_wallet' NÃO EXISTE, a carteira existe, e os detalhes estão em 'data'.
+      // Retorna APENAS o conteúdo de 'data', garantindo que é um Map.
       return responseData['data'] as Map<String, dynamic>? ?? {};
 
     } catch (e) {
@@ -237,7 +253,7 @@ class AuthService {
     }
   }
 
-  // Cria uma nova carteira (POST /wallet/create)
+  // 2. Cria uma nova carteira (POST /wallet/create)
   Future<Map<String, dynamic>> createWallet({required String password}) async {
     final Map<String, dynamic> body = {
       "password": password,
@@ -247,10 +263,26 @@ class AuthService {
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 
-  // Obtém o saldo da carteira (GET /wallet/balance)
+  // 3. Obtém o saldo da carteira (GET /wallet/balance)
   Future<Map<String, dynamic>> getBalance() async {
     final response = await _secureGet('wallet/balance');
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 
+  // 4. NEW -> Metodo para importar Carteira
+  Future<Map<String, dynamic>> importWalletFromPrivateKey({
+    required String privateKey,
+    required String password,
+  }) async {
+    final Map<String, dynamic> body = {
+      "private_key": privateKey,
+      "password": password,
+      "force_replace": true,
+    };
+    // Usamos a sua função auxiliar _securePost que já trata token e headers
+    final response = await _securePost('wallet/import/private-key', body: body);
+    
+    // retorna o "data" que contem wallet_id / adress
+    return response['data'] as Map<String, dynamic>? ?? {};
+  }
 }

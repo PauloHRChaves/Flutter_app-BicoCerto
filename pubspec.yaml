@@ -19,7 +19,9 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   # Funcionalidade abrir o app via link (usada no email).
   app_links: ^6.4.1
+  # Fonts
   google_fonts: ^6.3.2
+  # Dashboard - Graficos
   fl_chart: ^0.68.0
 
 dev_dependencies:
