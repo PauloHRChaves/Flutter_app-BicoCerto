@@ -21,6 +21,8 @@ dependencies:
   app_links: ^6.4.1
   google_fonts: ^6.3.2
   fl_chart: ^0.68.0
+  # formatar datas
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:

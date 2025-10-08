@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 // Este widget simula a galeria de fotos que você já criou.
 // Em um projeto real, você usaria o seu PhotoGalleryWidget.
@@ -75,76 +77,128 @@ class PhotoInputWidget extends StatelessWidget {
   }
 }
 
-// -------------------------------------------------------------
-// PÁGINA PRINCIPAL: CreateOrderPage
-// -------------------------------------------------------------
-class CreateOrderPage extends StatefulWidget {
-  const CreateOrderPage({super.key});
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  
+  // O construtor garante que o pacote intl esteja disponível para formatar
+  // com as configurações regionais do Brasil.
+  // IMPORTANTE: O pacote 'intl' AINDA É NECESSÁRIO para a classe NumberFormat.
+  final NumberFormat formatter = NumberFormat.currency(
+    locale: 'pt_BR', // Configuração regional do Brasil
+    symbol: '',      // Não usamos o símbolo aqui, apenas os separadores
+    decimalDigits: 2,
+  );
 
   @override
-  State<CreateOrderPage> createState() => _CreateOrderPageState();
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Se o valor de entrada for vazio, retorna vazio.
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    String maxLength = '999999999'; // Limite máximo de valor (9 dígitos antes da vírgula) 
+    if (newValue.text.replaceAll(RegExp(r'[^\d]'), '').length > maxLength.length) {
+      return oldValue; // Ignora a entrada se exceder o limite
+    }
+    // Remove tudo que não for dígito.
+    String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Se o usuário digitou '0' ou mais dígitos.
+    if (newText.isNotEmpty) {
+
+      // Converte a string de dígitos para um número double (ex: '1500' -> 15.00)
+      final double value = int.parse(newText) / 100; 
+
+      // Formata o número usando o NumberFormat (ex: 15.00 -> '15,00' ou '1.500,00')
+      final String formattedValue = formatter.format(value).trim();
+      
+      // Retorna a nova string com o cursor no final
+      return TextEditingValue(
+        text: formattedValue,
+        selection: TextSelection.collapsed(offset: formattedValue.length),
+      );
+    }
+
+    return newValue;
+  }
 }
 
-class _CreateOrderPageState extends State<CreateOrderPage> {
+
+
+// -------------------------------------------------------------
+// PÁGINA CreateJobPage
+// -------------------------------------------------------------
+class CreateJobPage extends StatefulWidget {
+  const CreateJobPage({super.key});
+
+  @override
+  State<CreateJobPage> createState() => _CreateOrderPageState();
+}
+
+class _CreateOrderPageState extends State<CreateJobPage> {
   // 1. Controladores e Variáveis de Estado
   final TextEditingController _titleJobControlle = TextEditingController();
   final TextEditingController _descriptionJobController = TextEditingController();
   final TextEditingController _locationJobController = TextEditingController();
+  final TextEditingController _budgetController = TextEditingController();
+
   // ------------ Ver controlador para as fotos
 
   
   String? _selectedCategory; // Estado da Categoria (Dropdown)
   DateTime? _selectedDate; // Estado da Data de Término
+  String _selectedDateFormated = '';
 
   // Lista de categorias (para o Dropdown)
   final List<String> _categories = [
     'Reformas', 'Assistência Técnica', 'Aulas Particulares', 'Design', 'Consultoria', 'Elétrica'
   ];
 
-  // Função para abrir o seletor de data
+  // Função para abrir o seletor, coletar data, e formata-la.
   Future<void> _selectDate(BuildContext context) async {
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 7)), // Data inicial
       firstDate: DateTime.now(), // Não pode ser uma data passada
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)), // Limite de 2 anos
     );
+
     if (picked != null && picked != _selectedDate) {
+      
+      final DateFormat formatter = DateFormat("dd-MM-yyyy");
+      final String formattedDate = formatter.format(picked);
+
       setState(() {
         _selectedDate = picked;
+        _selectedDateFormated = formattedDate;
       });
     }
   }
 
-// ------------------------------------------------------
-  final AuthService _authService = AuthService();
-  
-  
-  
+  // Função para tratar o valor da proposta antes de enviar
+  String _treatedBugdet(String formattedText){
+    if (formattedText.isEmpty) {
+      return '0.00';
+    }
+
+    final String removeThousandPoints = formattedText.replaceAll('.', '');
+    final String cleanText = removeThousandPoints.replaceAll(',', '.');
+    return cleanText;
 
 
+  }
 
-
-
-
-
-
-
-
-  // ----------------------------------------------------
-  // LÓGICA DA COLETA DE DADOS
-  // ----------------------------------------------------
+  // --------------------------------------------------------------------------------
+  //                       LÓGICA DA COLETA E ENVIO DE DADOS
+  // --------------------------------------------------------------------------------
  
-  void _submitOrder() {
-    // 1. Coleta os dados
-    final data = {
-      'title': _titleJobControlle.text,
-      'category': _selectedCategory,
-      'location': _locationJobController.text,
-      'description': _descriptionJobController.text,
-      'dueDate': _selectedDate?.toIso8601String(),
-      };
-
+  void _submitOrder() async {
+    final AuthService _authService = AuthService();
+    
     //-- 2. Validação básica
     if (_titleJobControlle.text.isEmpty || _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -152,41 +206,52 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       );
       return;
     }
-
-    try{
-      _authService.createJob(
+    
+    
+    try{  
+    
+      await _authService.createJob(
         title: _titleJobControlle.text,
         description: _descriptionJobController.text,
         category: _selectedCategory!,
         location: _locationJobController.text,
-        budget: "0", // -----------------------  Orçamento fixo como 0
-        deadline: _selectedDate,
-      );
-
-      if (mounted) {
-        ScaffoldMenssenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trabalho criado com sucesso!.')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao criar pedido: ${e.toString()}')),
+        budget: _treatedBugdet(_budgetController.text), 
+        deadline: _selectedDateFormated,
+        password: 'Senha1233.', 
       );
       
-    }
+    //------------------------CAMPO DE TESTES DE ENVIO -----------------------------
+    /*
+      final data = {
+      'title': _titleJobControlle.text,
+      'category': _selectedCategory,
+      'location': _locationJobController.text,
+      'budget': _treatedBugdet(_budgetController.text),
+      'description': _descriptionJobController.text,
+      'dueDate': _selectedDateFormated,
+      };
+    
+      //---Imprime os dados no console para demonstração
+      print("--- Pedido Enviado ---");
+      data.forEach((key, value) => print("$key: $value"));
+      print("------------------------");
+    */
+    //------------------------------------------------------------------------------
 
-    // 3. Imprime os dados no console para demonstração
-    print("--- Pedido Enviado ---");
-    data.forEach((key, value) => print("$key: $value"));
-    print("------------------------");
-    
-    // 4. Feedback e retorno
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pedido criado com sucesso!', style: TextStyle(color: Color.fromARGB(255, 6, 224, 97), backgroundColor: Colors.white))),
-    );
-    Navigator.of(context).pushNamed(AppRoutes.sessionCheck); // Volta para a tela anterior
-    
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Trabalho criado com sucesso!.', style: TextStyle(fontSize: 16, color: Colors.white),), backgroundColor: Colors.green, duration: Duration(seconds: 4)),
+        );
+        Navigator.of(context).pushNamed(AppRoutes.sessionCheck); // Volta para a tela anterior
+      }
+    } catch (e) {
+      print('Erro ao criar pedido: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao criar pedido: ${e.toString()}', style: const TextStyle(fontSize: 16, color: Colors.white),), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
+      );
+    }
   }
+  // ---------------------------FIM DA LÓGICA DE ENVIO-------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +276,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             const SizedBox(height: 20),
             
             // Localização
-            _buildTextField("Localização", _locationController, "Ex: Bairro Centro, Rua das Flores, 123"),
+            _buildTextField("Localização", _locationJobController, "Ex: Bairro Centro, Rua das Flores, 123"),
             const SizedBox(height: 20),
 
             // Descrição
@@ -227,6 +292,9 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
             // Data Estipulada de Término
             _buildDateField(),
+            const SizedBox(height: 30),
+
+            _buildCurrencyFieldWithoutPackage("Valor de Proposta", _budgetController, "Ex: 150,00"),
             const SizedBox(height: 30),
 
             // Botão de Envio
@@ -282,7 +350,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         const SizedBox(height: 8),
         TextField(
           controller: _descriptionJobController,
-          maxLinJobes: 4,
+          maxLines: 5,
           decoration: InputDecoration(
             hintText: "Descreva o problema ou o serviço que você precisa...",
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -364,7 +432,51 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         ),
       ],
     );
+
+
+
+
+    
   }
+
+  Widget _buildCurrencyFieldWithoutPackage(
+    String label,
+    TextEditingController controller,
+    String hint
+  ){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number, // Abre o teclado numérico
+          inputFormatters: [
+
+            // 1. Permite apenas dígitos
+            FilteringTextInputFormatter.digitsOnly, 
+
+            // 2. Aplica a formatação de moeda personalizada
+            CurrencyInputFormatter(), 
+          ],
+          decoration: InputDecoration(
+            hintText: hint,
+            // 💡 Adiciona o "R$ " Fixo à esquerda
+            prefixText: 'R\$ ', 
+            prefixStyle: const TextStyle(color: Colors.black, fontSize: 16), // Estilo do prefixo
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10), 
+              borderSide: BorderSide.none
+            ),
+            fillColor: Colors.grey.shade100,
+            filled: true,
+          ),
+        ),
+      ],
+    );
+  }
+
 
   @override
   void dispose() {
@@ -374,3 +486,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     super.dispose();
   }
 }
+
+
+

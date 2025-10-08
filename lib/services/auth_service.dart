@@ -208,10 +208,10 @@ class AuthService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return json.decode(response.body);
     } else {
-      throw Exception('Falha na requisição POST. Status: ${response.statusCode}');
-    }
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      throw Exception('${jsonResponse}');
   }
-
+}
   
 // ----------------------------------------------------------------------
 // MÉTODOS CRIAÇÃO DE TRABALHO (CORRIGIDOS)
@@ -223,7 +223,8 @@ Future<Map<String, dynamic>> createJob({
   required String category,
   required String location,
   required String budget,
-  required DateTime? deadline,
+  required String deadline,
+  required String password,
 }) async {
 
   // 1. Prepara o corpo (body) da requisição
@@ -232,8 +233,9 @@ Future<Map<String, dynamic>> createJob({
     'description': description,
     'category': category,
     'location': location,
-    'budget': budget,
-    'deadline': deadline?.toIso8601String(),
+    'max_budget_eth': budget,
+    'deadline': deadline,
+    'password': password,
   };
 
   // 2. Chama a função _securePost, que faz todo o trabalho:
@@ -242,7 +244,7 @@ Future<Map<String, dynamic>> createJob({
   //    c) Adiciona o token no cabeçalho Authorization
   //    d) Envia a requisição POST para o endpoint 'jobs/create'
   //    e) Trata o status code e decodifica a resposta
-  final response = await _securePost('jobs/create', body: jobData);
+  final response = await _securePost('jobs/create-open', body: jobData);
 
   // 3. Retorna a resposta, já tratada por _securePost
   return response;

@@ -33,7 +33,7 @@ class AppRoutes {
     walletPage: (context) => const WalletPage(), 
     ordersPage: (context) => const OrdersPage(),
     orderInfoPage: (context) => const OrderInfoPage(),
-    createFormPage: (context) => const CreateOrderPage(),
+    createFormPage: (context) => const CreateJobPage(),
     dashboardPage: (context) => const DashboardScreen(),
   };
 }
