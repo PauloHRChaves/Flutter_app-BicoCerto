@@ -23,9 +23,10 @@ class RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
+  bool _passwordVisible = false;
+  bool _passwordVisible2 = false;
   // ----------------------------------------------------
   // PARTE 2: LÓGICA DE LOGIN (COMUNICAÇÃO COM API)
   // ----------------------------------------------------
@@ -97,6 +98,21 @@ class RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // Função auxiliar para criar a decoração dos campos de texto - Possivelmente passar para pasta widgets/
+  InputDecoration _inputDecorationPass(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -105,30 +121,32 @@ class RegisterPageState extends State<RegisterPage> {
     final double font = screenWidth * 0.04;
     final double fonttitle = screenWidth * 0.1;
 
-    const blackblue = Color.fromARGB(255, 10, 94, 140);
+    const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
+    const Color lightBlue = Color.fromARGB(255, 0, 100, 155);
 
     return Scaffold(
+      appBar: AppBar(backgroundColor: darkBlue),
       body: Stack(
         children: [
           Positioned.fill(
             child: Transform.translate(
-              offset: const Offset(0, -50.0),
+              offset: const Offset(0, -130),
               child: ClipPath(
                 clipper: WaveClipper(),
-                child: Container(color: blackblue),
+                child: Container(color: darkBlue),
               ),
             ),
           ),
 
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(height: screenHeight * 0.1),
+                    SizedBox(height: screenHeight * 0.07),
 
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20.0),
@@ -147,7 +165,7 @@ class RegisterPageState extends State<RegisterPage> {
                       style: TextStyle(
                         fontSize: fonttitle,
                         fontWeight: FontWeight.bold,
-                        color: blackblue,
+                        color: lightBlue,
                       ),
                     ),
 
@@ -174,27 +192,49 @@ class RegisterPageState extends State<RegisterPage> {
                       validator: (value) =>
                           value!.isEmpty ? 'O email é obrigatório' : null,
                     ),
-
                     SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
                       controller: _passwordController,
-                      decoration: _inputDecoration('Senha', Icons.lock),
-                      obscureText: true,
+                      decoration: _inputDecorationPass('Senha', Icons.lock).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      obscureText: !_passwordVisible,
                       validator: _validatePassword,
                     ),
-
                     SizedBox(height: screenHeight * 0.02),
 
                     // Input
                     TextFormField(
                       controller: _confirmPasswordController,
-                      decoration: _inputDecoration(
-                        'Confirmar Senha',
-                        Icons.lock,
+                      decoration: _inputDecorationPass('Confirmar Senha', Icons.lock).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible2
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible2 = !_passwordVisible2;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: !_passwordVisible2,
+                      
                       validator: (value) {
                         if (value!.isEmpty) {
                           return 'Confirme sua senha';
@@ -205,14 +245,13 @@ class RegisterPageState extends State<RegisterPage> {
                         return null;
                       },
                     ),
-
                     SizedBox(height: screenHeight * 0.03),
 
                     // Botão Cadastrar chama logica de Register
                     ElevatedButton(
                       onPressed: _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: blackblue,
+                        backgroundColor: lightBlue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -246,7 +285,7 @@ class RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
 
-                    SizedBox(height: screenHeight * 0.05),
+                    SizedBox(height: screenHeight * 0.15),
                   ],
                 ),
               ),
