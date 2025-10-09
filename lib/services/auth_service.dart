@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
-// TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
   // Use o endereço do emulador Android para se conectar à sua máquina.
@@ -13,7 +12,6 @@ class AuthService {
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
-  // METODOS ESSENCIAIS - TOKEN
   // METODOS ESSENCIAIS - TOKEN
   // ----------------------------------------------------------------------
   
@@ -32,7 +30,6 @@ class AuthService {
     await _storage.delete(key: 'access_token');
   }
   
-  // Verifica se o usuário tem um token válido
   // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
@@ -105,7 +102,7 @@ class AuthService {
   // LOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
   // ----------------------------------------------------------------------
   
-  // Lógica de Registro (Omitida para brevidade)
+  // Lógica de Registro
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
@@ -228,43 +225,43 @@ class AuthService {
     }
   }
 
-// ----------------------------------------------------------------------
-// MÉTODOS CRIAÇÃO DE TRABALHO (CORRIGIDOS)
-// ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // MÉTODOS CRIAÇÃO DE TRABALHO
+  // ----------------------------------------------------------------------
 
-Future<Map<String, dynamic>> createJob({
-  required String title,
-  required String description,
-  required String category,
-  required String location,
-  required String budget,
-  required String deadline,
-  required String password,
-}) async {
+  Future<Map<String, dynamic>> createJob({
+    required String title,
+    required String description,
+    required String category,
+    required String location,
+    required String budget,
+    required String deadline,
+    required String password,
+  }) async {
 
-  // 1. Prepara o corpo (body) da requisição
-  final Map<String, dynamic> jobData = {
-    'title': title,
-    'description': description,
-    'category': category,
-    'location': location,
-    'max_budget_eth': budget,
-    'deadline': deadline,
-    'password': password,
-  };
+    // 1. Prepara o corpo (body) da requisição
+    final Map<String, dynamic> jobData = {
+      'title': title,
+      'description': description,
+      'category': category,
+      'location': location,
+      'max_budget_eth': budget,
+      'deadline': deadline,
+      'password': password,
+    };
 
-  // 2. Chama a função _securePost, que faz todo o trabalho:
-  final response = await _securePost('jobs/create-open', body: jobData);
+    // 2. Chama a função _securePost, que faz todo o trabalho:
+    final response = await _securePost('jobs/create-open', body: jobData);
 
-  // 3. Retorna a resposta, já tratada por _securePost
-  return response;
-}
+    // 3. Retorna a resposta, já tratada por _securePost
+    return response;
+  }
 
   // ----------------------------------------------------------------------
-  // NOVOS MÉTODOS DE PERFIL E WALLET
+  // MÉTODOS DE PERFIL E WALLET
   // ----------------------------------------------------------------------
   
-  // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
+  // Obtém o perfil do usuário logado (GET /auth/me)
   Future<Map<String, dynamic>> getUserProfile() async {
     final responseData = await _secureGet('auth/me');
     return responseData['data'] as Map<String, dynamic>? ?? {}; 
@@ -285,7 +282,7 @@ Future<Map<String, dynamic>> createJob({
       final walletDataRaw = responseData['data'];
       
       if (walletDataRaw == null || walletDataRaw is! Map<String, dynamic>) {
-          throw const FormatException("API retornou sucesso, mas houve falha ao enviar os dados.");
+        throw const FormatException("API retornou sucesso, mas houve falha ao enviar os dados.");
       }
       
       // Conversão segura após a verificação
@@ -302,7 +299,7 @@ Future<Map<String, dynamic>> createJob({
     }
   }
 
-  // 2. Cria uma nova carteira (POST /wallet/create)
+  // Cria uma nova carteira (POST /wallet/create)
   Future<Map<String, dynamic>> createWallet({required String password}) async {
     final Map<String, dynamic> body = {
       "password": password,
@@ -312,13 +309,13 @@ Future<Map<String, dynamic>> createJob({
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 
-  // 3. Obtém o saldo da carteira (GET /wallet/balance)
+  // Obtém o saldo da carteira (GET /wallet/balance)
   Future<Map<String, dynamic>> getBalance() async {
     final response = await _secureGet('wallet/balance');
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 
-  // 4. NEW -> Metodo para importar Carteira
+  // Importar Carteira
   Future<Map<String, dynamic>> importWalletFromPrivateKey({
     required String privateKey,
     required String password,
@@ -333,5 +330,43 @@ Future<Map<String, dynamic>> createJob({
     
     // retorna o "data" que contem wallet_id / adress
     return response['data'] as Map<String, dynamic>? ?? {};
+  }
+  
+  // FUNÇÃO AUXILIAR PARA DELETE WALLET
+  Future<Map<String, dynamic>> _secureDelete(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) { // 204 também é sucesso para delete
+      if (response.body.isEmpty) return {'success': true}; // Retorna sucesso se o corpo for vazio
+      return json.decode(response.body);
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição DELETE. Status: ${response.statusCode}');
+    }
+  }
+
+  // Deletar a carteira
+  Future<void> deleteWallet({required String password}) async {
+    await _secureDelete(
+      'wallet/delete',
+      body: {'password': password},
+    );
   }
 }
