@@ -374,6 +374,36 @@ class AuthService {
     }
   }
 
+  // --- FUNÇÃO AUXILIAR PARA DELETE WALLET (NOVA) 08/10/2025 ---
+  Future<Map<String, dynamic>> _secureDelete(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) { // 204 também é sucesso para delete
+      if (response.body.isEmpty) return {'success': true}; // Retorna sucesso se o corpo for vazio
+      return json.decode(response.body);
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição DELETE. Status: ${response.statusCode}');
+    }
+  }
+
   // ----------------------------------------------------------------------
   // LOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
   // ----------------------------------------------------------------------
@@ -561,6 +591,15 @@ class AuthService {
     // retorna o "data" que contem wallet_id / adress
     return response['data'] as Map<String, dynamic>? ?? {};
   }
+ // 5. Novo metodo para deletar a carteira
+  Future<void> deleteWallet({required String password}) async {
+    await _secureDelete(
+      'wallet/delete',
+      body: {'password': password},
+    );
+  }
+
+
 
 
 }

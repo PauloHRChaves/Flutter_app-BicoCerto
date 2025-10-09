@@ -45,10 +45,10 @@ class WalletPage extends StatefulWidget {
 
 class _WalletPageState extends State<WalletPage> {
   final AuthService _authService = AuthService();
-  late Timer _timer; 
+  Timer? _timer; 
   
   bool _isLoading = true;
-  String _balance = "R\$ 0,00 BRL"; // Corrigido para BRL
+  String _balance = "Carregando...";
   String _fullAddress = "";
   String _displayAddress = "Carregando...";
   
@@ -60,9 +60,7 @@ class _WalletPageState extends State<WalletPage> {
 
   @override
   void dispose() {
-    if (mounted && _timer.isActive) {
-        _timer.cancel(); 
-    }
+    _timer?.cancel(); 
     super.dispose();
   }
   
@@ -72,34 +70,140 @@ class _WalletPageState extends State<WalletPage> {
   }
   // ------------------------------------
 
-  // --- NOVA LÓGICA: ATUALIZAÇÃO ROBUSTA DO ESTADO ---
-  void _updateStateWithData(Map<String, dynamic> data) {
-    if (!mounted) return;
+  // =============================================================
+  // --- FLUXO DE DELEÇÃO (Com dois pop-ups e API Call) ---
+  // =============================================================
 
-    // Garante que o valor seja tratado como String ou número
-    final dynamic balanceRaw = data['balance_eth'];
-    final String balanceAsString = balanceRaw?.toString() ?? '0';
+  // 1. Função principal que inicia o fluxo de deleção
+  Future<void> _handleDeleteWallet() async {
+    // Mostra o primeiro diálogo e espera o usuário confirmar (true) ou cancelar (false/null).
+    final bool? confirmed = await _showDeleteConfirmationDialog();
 
-    // Converte a String para double de forma segura (para lidar com centavos)
-    final balanceAsDouble = double.tryParse(balanceAsString) ?? 0.0;
-    
-    // Divisão por 100.0 para formatar centavos/wei em Reais
-    final balanceInBRL = balanceAsDouble; 
+    // Se o usuário não confirmou, não faz mais nada.
+    if (confirmed != true) {
+      return;
+    }
 
-    final fullAddress = data['address'] as String? ?? "0x000...000";
+    // Se confirmou, mostra o segundo diálogo e espera pela senha.
+    final String? password = await _showPasswordDialogForDeletion();
 
-    setState(() {
-      // Formata o valor final para o padrão brasileiro (R$ X.XXX,XX BRL)
-      _balance = "R\$ ${balanceInBRL.toStringAsFixed(2).replaceAll('.', ',')} BRL";
-      
-      _fullAddress = fullAddress;
-      _displayAddress = fullAddress.length > 10 
-          ? '${fullAddress.substring(0, 6)}...${fullAddress.substring(fullAddress.length - 4)}'
-          : fullAddress;
-    });
+    // Se o usuário não digitou uma senha (cancelou ou voltou), não faz mais nada.
+    if (password == null || password.isEmpty) {
+      return;
+    }
+
+    // Com a senha em mãos, agora sim executamos a lógica de exclusão.
+    try {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Excluindo carteira...')),
+      );
+
+      // Assumindo que você adicionou o método deleteWallet no AuthService
+      await _authService.deleteWallet(password: password);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Carteira excluída com sucesso!'), backgroundColor: Colors.green),
+      );
+
+      // Navega para a tela de checagem de sessão e remove todas as telas anteriores
+      Navigator.pushNamedAndRemoveUntil(
+          context, AppRoutes.sessionCheck, (route) => false);
+
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao excluir: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  // --- LÓGICA DE BUSCA DA CARTEIRA E POLING ---
+  // 2. Mostra o PRIMEIRO pop-up (confirmação)
+  Future<bool?> _showDeleteConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Excluir Carteira'),
+          content: const Text(
+            'Você tem certeza que quer excluir sua carteira?.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(false); // Retorna 'false'
+              },
+            ),
+            TextButton(
+              child: const Text('Sim, continuar', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(context).pop(true); // Retorna 'true'
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 3. Mostra o SEGUNDO pop-up (senha)
+  Future<String?> _showPasswordDialogForDeletion() {
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmação de Segurança'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Digite sua senha'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'A senha é obrigatória.';
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(null); // Retorna nulo
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Excluir Definitivamente'),
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  // Apenas retorna a senha, a lógica de API está em _handleDeleteWallet
+                  Navigator.of(context).pop(passwordController.text);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // =============================================================
+  // --- FIM DAS NOVAS FUNÇÕES ---
+  // =============================================================
+
+
+  // --- NOVA LÓGICA: CHECAGEM E REDIRECIONAMENTO ---
   void _checkAndLoadWalletStatus() async {
     try {
       final details = await _authService.getWalletDetails(); 
@@ -112,7 +216,6 @@ class _WalletPageState extends State<WalletPage> {
             );
         }
       } else {
-        // Carteira existe: Carrega dados e inicia o Polling
         _fetchWalletData(showLoading: true); 
         _startPolling();
       }
@@ -130,14 +233,15 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   void _startPolling() {
-      if (mounted && (this as dynamic)._timer != null && _timer.isActive) {
-          _timer.cancel();
-      }
+      _timer?.cancel(); 
+
       _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-          _fetchWalletData(showLoading: false); // Busca silenciosa
+          _fetchWalletData(showLoading: false);
       });
   }
 
+
+  // --- LÓGICA DE BUSCA E FORMATO (Fetch Data) ---
   void _fetchWalletData({bool showLoading = true}) async {
     if (showLoading && mounted) {
       setState(() { _isLoading = true; });
@@ -145,8 +249,6 @@ class _WalletPageState extends State<WalletPage> {
     
     try {
       final balanceData = await _authService.getBalance();
-      
-      // Usa a nova função para atualizar o estado com a formatação BRL
       _updateStateWithData(balanceData); 
 
       if (mounted) {
@@ -162,6 +264,30 @@ class _WalletPageState extends State<WalletPage> {
         });
       }
     }
+  }
+
+  // --- MUDANÇA: Centraliza a lógica de atualização do estado ---
+  void _updateStateWithData(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    final dynamic balanceRaw = data['balance_eth'];
+    final String balanceAsString = balanceRaw?.toString() ?? '0';
+
+    final balanceAsDouble = double.tryParse(balanceAsString) ?? 0.0;
+    
+    // Divisão por 100.0 para formatar centavos/wei em Reais
+    final balanceInBRL = balanceAsDouble / 100.0; 
+
+    final fullAddress = data['address'] as String? ?? "0x000...000";
+
+    setState(() {
+      _balance = "R\$ ${balanceInBRL.toStringAsFixed(2).replaceAll('.', ',')} BRL";
+      
+      _fullAddress = fullAddress;
+      _displayAddress = fullAddress.length > 10 
+          ? '${fullAddress.substring(0, 6)}...${fullAddress.substring(fullAddress.length - 4)}'
+          : fullAddress;
+    });
   }
 
 
@@ -197,13 +323,18 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               const Icon(Icons.account_balance_wallet, color: primaryBlue, size: 24),
               const SizedBox(width: 8),
-              Text(_displayAddress, style: const TextStyle(color: darkText, fontSize: 16)), // Endereço Encurtado
-              const Icon(Icons.copy, color: lightGreyText, size: 16), // Ícone de Copiar
+              Text(_displayAddress, style: const TextStyle(color: darkText, fontSize: 18)),
+              const Icon(Icons.copy, color: lightGreyText, size: 16),
             ],
           ),
         ),
         actions: [
           IconButton(icon: const Icon(Icons.qr_code_scanner, color: darkText), onPressed: () {}),
+          // --- NOVO ÍCONE DE LIXEIRA ADICIONADO AQUI ---
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: _handleDeleteWallet, // <<< CHAMA O FLUXO DE DELEÇÃO
+          ),
         ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: darkText),
@@ -223,7 +354,7 @@ class _WalletPageState extends State<WalletPage> {
                   children: [
                     const SizedBox(height: 30),
                     Text(
-                      _balance, // SALDO DINÂMICO FORMATADO
+                      _balance,
                       style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: darkText),
                     ),
                     const SizedBox(height: 8),
@@ -243,18 +374,8 @@ class _WalletPageState extends State<WalletPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildWalletActionButton(
-                    Icons.arrow_upward, 
-                    "Enviar", 
-                    primaryBlue, 
-                    () => _navigateTo(AppRoutes.sendPage),
-                  ),
-                  _buildWalletActionButton(
-                    Icons.arrow_downward, 
-                    "Receber", 
-                    primaryBlue, 
-                    () => _navigateTo(AppRoutes.receivePage),
-                  ),
+                  _buildWalletActionButton(Icons.arrow_upward, "Enviar", primaryBlue, () => _navigateTo(AppRoutes.sendPage)),
+                  _buildWalletActionButton(Icons.arrow_downward, "Receber", primaryBlue, () => _navigateTo(AppRoutes.receivePage)),
                 ],
               ),
               const SizedBox(height: 30),
@@ -302,7 +423,7 @@ class _WalletPageState extends State<WalletPage> {
           } else if (index == 2) {
             // Já estamos na Carteira, não faz nada
           } else if (index == 3) {
-             Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, (route) => route.isFirst);
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, (route) => route.isFirst);
           }
         },
       ),
