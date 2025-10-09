@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
+// TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
   // Use o endereço do emulador Android para se conectar à sua máquina.
@@ -12,6 +13,7 @@ class AuthService {
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
+  // METODOS ESSENCIAIS - TOKEN
   // METODOS ESSENCIAIS - TOKEN
   // ----------------------------------------------------------------------
   
@@ -30,6 +32,7 @@ class AuthService {
     await _storage.delete(key: 'access_token');
   }
   
+  // Verifica se o usuário tem um token válido
   // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
@@ -170,6 +173,7 @@ class AuthService {
   Future<void> logout() async {
     final token = await getToken();
     
+    
     if (token != null) {
       await http.post(
         Uri.parse('$baseUrl/auth/logout'),
@@ -178,6 +182,7 @@ class AuthService {
         },
       );
     }
+    await deleteToken();
     await deleteToken();
   }
 
@@ -223,17 +228,49 @@ class AuthService {
     }
   }
 
+// ----------------------------------------------------------------------
+// MÉTODOS CRIAÇÃO DE TRABALHO (CORRIGIDOS)
+// ----------------------------------------------------------------------
+
+Future<Map<String, dynamic>> createJob({
+  required String title,
+  required String description,
+  required String category,
+  required String location,
+  required String budget,
+  required String deadline,
+  required String password,
+}) async {
+
+  // 1. Prepara o corpo (body) da requisição
+  final Map<String, dynamic> jobData = {
+    'title': title,
+    'description': description,
+    'category': category,
+    'location': location,
+    'max_budget_eth': budget,
+    'deadline': deadline,
+    'password': password,
+  };
+
+  // 2. Chama a função _securePost, que faz todo o trabalho:
+  final response = await _securePost('jobs/create-open', body: jobData);
+
+  // 3. Retorna a resposta, já tratada por _securePost
+  return response;
+}
+
   // ----------------------------------------------------------------------
   // NOVOS MÉTODOS DE PERFIL E WALLET
   // ----------------------------------------------------------------------
-
+  
   // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
   Future<Map<String, dynamic>> getUserProfile() async {
     final responseData = await _secureGet('auth/me');
     return responseData['data'] as Map<String, dynamic>? ?? {}; 
   }
-  
-  // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
+
+  // Obtém os detalhes da carteira (GET /wallet/my-wallet)
   Future<Map<String, dynamic>> getWalletDetails() async {
     try {
       final responseData = await _secureGet('wallet/my-wallet');

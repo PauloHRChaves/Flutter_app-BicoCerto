@@ -3,8 +3,6 @@ import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 
 
-
-
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
 
