@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/chat_rooms_controller.dart';
 import '../../routes.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/bottom_navbar.dart';
 import '../../widgets/chat/chat_room_item.dart';
 
@@ -29,6 +30,13 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> with WidgetsBindingOb
     if (state == AppLifecycleState.resumed) {
       context.read<ChatRoomsController>().loadRooms();
     }
+  }
+
+  void _handleLogout(BuildContext context) async {
+    final AuthService authService = AuthService();
+    await authService.logout();
+    if (!context.mounted) return;
+    Navigator.pushNamed(context, AppRoutes.sessionCheck);
   }
 
   @override
@@ -94,7 +102,7 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> with WidgetsBindingOb
                   Text(controller.error!),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => controller.loadRooms(),
+                    onPressed: () => _handleLogout(context),
                     child: const Text('Tentar novamente'),
                   ),
                 ],
