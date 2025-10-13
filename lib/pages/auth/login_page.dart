@@ -54,13 +54,12 @@ class LoginPageState extends State<LoginPage> {
           );
           final chatController = context.read<ChatRoomsController>();
           await chatController.initialize();
-          // Navigator.of(context).pushReplacement(
-          //   MaterialPageRoute(
-          //     builder: (context) => const HomePage(isLoggedIn: true),
-          //   ),
-          // );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const HomePage(isLoggedIn: true),
+            ),
+          );
 
-          Navigator.pushNamed(context, '/chat_rooms');
         }
       } catch (e) {
         // Lógica de erro: exibe uma mensagem de erro se o login falhar

@@ -351,13 +351,11 @@ class HomePage extends StatelessWidget {
               (route) => route.isFirst,
             );
           } else if (index == 2) {
-            /* COLOCAR A ROTA DO CHAT AQUI
             Navigator.pushNamedAndRemoveUntil(
               context,
-              AppRoutes.chatPage,
+              AppRoutes.chatRoomsPage,
               (route) => route.isFirst,
             );
-            */
           } else if (index == 3) {
             // AppRoutes.profileteste -> pagina de teste
             // AppRoutes.profilePage   -> pagina de uso

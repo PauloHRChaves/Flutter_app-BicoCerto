@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/chat_rooms_controller.dart';
+import '../../routes.dart';
+import '../../widgets/bottom_navbar.dart';
 import '../../widgets/chat/chat_room_item.dart';
 
 class ChatRoomsScreen extends StatefulWidget {
@@ -131,6 +133,33 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> with WidgetsBindingOb
           );
         },
       ),
+
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 2,
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.sessionCheck,
+                    (route) => route.isFirst,
+              );
+            } else if (index == 1) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.ordersPage,
+                    (route) => route.isFirst,
+              );
+            } else if (index == 3) {
+              // AppRoutes.profileteste -> pagina de teste
+              // AppRoutes.profilePage   -> pagina de uso
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.profilePage,
+                    (route) => route.isFirst,
+              );
+            }
+          },
+        ),
     );
   }
 }

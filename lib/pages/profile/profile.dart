@@ -539,12 +539,11 @@ class _SetProfileState extends State<ProfilePage> {
                 (route) => route.isFirst,
               );
             } else if (index == 2) {
-              /*
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                AppRoutes.walletPage,
-                (route) => route.isFirst,
-              );*/
+                AppRoutes.chatRoomsPage,
+                    (route) => route.isFirst,
+              );
             } else if (index == 3) {
               /*
               Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
