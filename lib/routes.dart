@@ -20,6 +20,8 @@ import 'package:bico_certo/pages/wallet/receive_page.dart';
 import 'package:bico_certo/pages/order/order_page.dart';
 import 'package:bico_certo/pages/create/create_info.dart';
 import 'package:bico_certo/pages/create/create_form.dart';
+import 'package:bico_certo/pages/chat/chat_rooms_page.dart';
+import 'package:bico_certo/pages/chat/chat_page.dart';
 
 // TESTAR PAGINA PROFILE SEM BACKEND
 //import 'package:bico_certo/test/profile_teste.dart';
@@ -42,6 +44,9 @@ class AppRoutes {
   static const String authWrapper = '/auth';
   static const String forgotPasswordPage = '/forgot-password';
   static const String resetPasswordPage = '/reset-password';
+
+  static const String chatRoomsPage = '/chat_rooms';
+  static const String chatPage = '/chat';
 
 
   // NOVAS ROTAS PARA AS AÇÕES DE CARTEIRA
@@ -77,5 +82,8 @@ class AppRoutes {
     walletPage: (context) => const WalletPage(), 
     sendPage: (context) => const SendPage(), 
     receivePage: (context) => const ReceivePage(),
+
+    chatRoomsPage: (context) => const ChatRoomsScreen(),
+    chatPage: (context) => const ChatPage(),
   };
 }

@@ -417,21 +417,6 @@ class _WalletPageState extends State<WalletPage> {
           ),
         ),
       ),
-      // --- BARRA DE NAVEGAÇÃO CUSTOMIZADA ---
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2, 
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.sessionCheck, (route) => route.isFirst);
-          } else if (index == 1) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, (route) => route.isFirst);
-          } else if (index == 2) {
-            // Já estamos na Carteira, não faz nada
-          } else if (index == 3) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, (route) => route.isFirst);
-          }
-        },
-      ),
     );
   }
 }

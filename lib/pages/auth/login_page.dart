@@ -3,6 +3,9 @@ import 'package:bico_certo/widgets/wave_clipper.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/home/home_page.dart';
 import 'package:bico_certo/pages/auth/forgot_password_page.dart';
+import 'package:http/http.dart';
+import 'package:provider/provider.dart';
+import '../../controllers/chat_rooms_controller.dart';
 
 // ----------------------------------------------------
 // DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
@@ -30,7 +33,7 @@ class LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
 
   // Função que executa a lógica de login
-  void _handleLogin() async {
+  Future<void> _handleLogin() async {
     // Valida o formulário antes de tentar o login
     if (_formKey.currentState!.validate()) {
       try {
@@ -49,12 +52,14 @@ class LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login realizado com sucesso!')),
           );
-
+          final chatController = context.read<ChatRoomsController>();
+          await chatController.initialize();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const HomePage(isLoggedIn: true),
             ),
           );
+
         }
       } catch (e) {
         // Lógica de erro: exibe uma mensagem de erro se o login falhar

@@ -24,6 +24,9 @@ dependencies:
   # Dashboard - Graficos
   fl_chart: ^0.68.0
   intl: ^0.18.1
+  web_socket_channel: ^2.4.0
+  provider: ^6.1.1
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -35,7 +38,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    
+    - .env
+
   fonts:
     - family: LeagueSpartan
       fonts:

@@ -3,12 +3,13 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
   // Use o endereço do emulador Android para se conectar à sua máquina.
-  final String baseUrl = 'http://10.0.2.2:8000'; 
+  final String baseUrl = dotenv.env['BASE_URL'] ?? '';
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
@@ -34,6 +35,18 @@ class AuthService {
   Future<bool> getAuthStatus() async {
     final token = await getToken();
     return token != null;
+  }
+
+  Future<void> saveUserId(String id) async {
+    await _storage.write(key: 'user_id', value: id);
+  }
+
+  Future<String?> getUserId() async {
+    return await _storage.read(key: 'user_id');
+  }
+
+  Future<void> deleteUserId() async {
+    await _storage.delete(key: 'user_id');
   }
 
   // ----------------------------------------------------------------------
@@ -112,6 +125,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/register'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: jsonEncode(<String, String>{
         'email': email,
@@ -147,7 +161,9 @@ class AuthService {
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
       final String accessToken = responseBody['data']['access_token'];
+      final String userId = responseBody['data']['user']['id'];
       await saveToken(accessToken);
+      await saveUserId(userId);
       return responseBody;
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
@@ -180,7 +196,7 @@ class AuthService {
       );
     }
     await deleteToken();
-    await deleteToken();
+    await deleteUserId();
   }
 
   // ESQUECEU A SENHA
