@@ -7,11 +7,10 @@ import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/pages/order/order_page.dart';
 import 'package:bico_certo/pages/create/create_info.dart';
 import 'package:bico_certo/pages/create/create_form.dart';
+import 'package:bico_certo/pages/chat/chat_rooms_page.dart';
+import 'package:bico_certo/pages/chat/chat_page.dart';
 
 import 'package:flutter/material.dart';
-
-// TESTAR PAGINA PROFILE SEM BACKEND
-//import 'package:bico_certo/test/profile_teste.dart';
 
 class AppRoutes {
   static const String welcome = '/';
@@ -23,17 +22,20 @@ class AppRoutes {
   static const String orderInfoPage = '/info_order';
   static const String createFormPage = '/order_form';
   static const String dashboardPage = '/dashboard';
-
+  static const String chatRoomsPage = '/chat_rooms';
+  static const String chatPage = '/chat';
 
   static Map<String, Widget Function(BuildContext)> get routes => {
     welcome: (context) => const WelcomePage(),
     sessionCheck: (context) => const SessionCheckerPage(),
     authWrapper: (context) => const AuthWrapper(),
     profilePage: (context) => const ProfilePage(),
-    walletPage: (context) => const WalletPage(), 
+    walletPage: (context) => const WalletPage(),
     ordersPage: (context) => const OrdersPage(),
     orderInfoPage: (context) => const OrderInfoPage(),
     createFormPage: (context) => const CreateOrderPage(),
     dashboardPage: (context) => const DashboardScreen(),
+    chatRoomsPage: (context) => const ChatRoomsScreen(),
+    chatPage: (context) => const ChatPage(),
   };
 }
