@@ -2,16 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Para executar este código, adicione as seguintes dependências ao seu arquivo `pubspec.yaml`:
-//
-// dependencies:
-//   flutter:
-//     sdk: flutter
-//   fl_chart: ^0.68.0
-//   google_fonts: ^6.2.1
-//
-// Depois, execute `flutter pub get` no terminal.
-
 void main() {
   runApp(const MyApp());
 }

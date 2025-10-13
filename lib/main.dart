@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:bico_certo/services/local_storage_service.dart';
+import 'package:bico_certo/routes.dart';
 import 'package:provider/provider.dart';
-import 'services/local_storage_service.dart';
-import 'services/chat_api_service.dart';
-import 'controllers/chat_rooms_controller.dart';
-import 'routes.dart';
+import 'package:bico_certo/controllers/chat_rooms_controller.dart';
+import 'package:bico_certo/services/chat_api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

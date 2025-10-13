@@ -54,13 +54,11 @@ class HomePage extends StatelessWidget {
     final double fontnormal = screenWidth * 0.04;
     final double fontbold = screenWidth * 0.05;
     final double title = screenWidth * 0.06;
-
+    
     const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
     const Color lightBlue = Color.fromARGB(255, 10, 94, 140);
-    const Color blue = Color.fromARGB(255, 37, 143, 230);
     const Color accentBlue = Color.fromARGB(255, 74, 58, 255);
     const Color accentColor = Color.fromARGB(255, 255, 132, 0);
-    const Color white = Color.fromARGB(255, 252, 252, 252);
 
     return Scaffold(
       appBar: AppBar(
@@ -68,7 +66,7 @@ class HomePage extends StatelessWidget {
         backgroundColor: darkBlue,
         title: const Text(
           "BICO CERTO",
-          style: TextStyle(color: blue, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
           Padding(
@@ -87,7 +85,7 @@ class HomePage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
-                side: const BorderSide(color: white, width: 1),
+                side: const BorderSide(color: Colors.white, width: 1),
               ),
               child: Text(
                 isLoggedIn ? 'Logout' : 'Login',
@@ -119,7 +117,10 @@ class HomePage extends StatelessWidget {
                 textAlign: TextAlign.start,
                 text: TextSpan(
                   text: 'Encontre o ',
-                  style: TextStyle(color: white, fontSize: screenWidth * 0.08),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.08,
+                  ),
                   children: <TextSpan>[
                     TextSpan(
                       text: 'Profissional Ideal',
@@ -131,7 +132,7 @@ class HomePage extends StatelessWidget {
                     ),
                     TextSpan(
                       text: ' para o seu serviço !',
-                      style: TextStyle(color: white),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -164,7 +165,7 @@ class HomePage extends StatelessWidget {
                       child: TextField(
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: white,
+                          fillColor: Colors.white,
                           hintText: "Qual serviço você procura?",
                           prefixIcon: Icon(Icons.search),
                           border: OutlineInputBorder(
@@ -209,7 +210,7 @@ class HomePage extends StatelessWidget {
                         "Buscar Serviço",
                         style: TextStyle(
                           fontSize: fontbold,
-                          color: white,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -295,7 +296,7 @@ class HomePage extends StatelessWidget {
                   Text(
                     "É Profissional?",
                     style: TextStyle(
-                      color: white,
+                      color: Colors.white,
                       fontSize: title,
                       fontWeight: FontWeight.w600,
                     ),
@@ -305,17 +306,14 @@ class HomePage extends StatelessWidget {
 
                   Text(
                     "Cadastre-se, busque e receba orçamentos de novos clientes.",
-                    style: TextStyle(
-                      fontSize: fontnormal, 
-                      color: white
-                    ),
+                    style: TextStyle(fontSize: fontnormal, color: Colors.white),
                   ),
 
                   SizedBox(height: screenHeight * 0.01),
 
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: white,
+                      backgroundColor: Colors.white,
                       foregroundColor: accentBlue,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
@@ -337,28 +335,35 @@ class HomePage extends StatelessWidget {
         ),
       ),
 
-        bottomNavigationBar: CustomBottomNavBar(
+      bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 0,
         onTap: (index) {
-
           if (index == 0) {
-              Navigator.pushNamedAndRemoveUntil(
-              context, 
-              AppRoutes.sessionCheck, 
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.sessionCheck,
               (route) => route.isFirst,
             );
           } else if (index == 1) {
-        
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, 
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.ordersPage,
               (route) => route.isFirst,
             );
           } else if (index == 2) {
-            
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.walletPage, 
+            /* COLOCAR A ROTA DO CHAT AQUI
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.chatPage,
               (route) => route.isFirst,
             );
+            */
           } else if (index == 3) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
+            // AppRoutes.profileteste -> pagina de teste
+            // AppRoutes.profilePage   -> pagina de uso
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.profilePage,
               (route) => route.isFirst,
             );
           }
