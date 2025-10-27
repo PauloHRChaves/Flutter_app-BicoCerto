@@ -81,12 +81,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _navigateToJobsList(BuildContext context, String categoryDisplayName) {
-    final categoryKey = categoryMapping[categoryDisplayName] ??
-        categoryDisplayName.toLowerCase().replaceAll(' ', '_');
     Navigator.pushNamed(
       context,
       AppRoutes.jobsList,
-      arguments: {'category': categoryKey},
+      arguments: {'category': categoryDisplayName},
     );
   }
 
