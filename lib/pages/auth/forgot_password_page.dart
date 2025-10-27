@@ -21,7 +21,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
     try {
       await _authService.forgotPassword(email: _emailController.text);
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

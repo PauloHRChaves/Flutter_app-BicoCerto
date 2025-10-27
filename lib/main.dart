@@ -42,12 +42,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-/* 
-  A rota inicial, em routes.dart, vai ser '/welcome' se for a primeira vez acessando o app ->
-  vai passar para 'sessionCheck' onde vai verificar e passar o atributo "isLoggedIn" e mandar para a 'home_page' ->
-  - Caso o "isLoggedIn" o usuario pode acessar a 'home_page' e o app normalmente.
-
-  - Caso o "!isLoggedIn" botão de "login" vai habilitar, o usuario vai precisar logar || registrar ->
-    vai ser mandado para a rota '/auth' e seguir a logica de 'auth_wrapper' ->
-    vai para login_page//register_page.
-*/

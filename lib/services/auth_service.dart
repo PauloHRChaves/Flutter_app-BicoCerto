@@ -232,7 +232,7 @@ class AuthService {
   }
 
   // RESETAR SENHA
-  Future<Map<String, dynamic>> resetPassword({
+   Future<Map<String, dynamic>> resetPassword({
     required String resetToken,
     required String code,
     required String newPassword,
@@ -403,5 +403,38 @@ class AuthService {
       'wallet/delete',
       body: {'password': password},
     );
+  }
+
+  // Metodo para transferir dinheiro(ETH)
+  Future<Map<String, dynamic>> transferEth({
+    required String password,
+    required String toAddress,
+    required double amount,
+    required String note,
+  }) async {
+    final Map<String, dynamic> body = {
+      'password': password,
+      'to_address': toAddress,
+      'amount_eth': amount,
+      'note': note,
+    };
+
+    final response = await _securePost('wallet/transfer', body: body);
+
+    return response;
+  }
+
+  // Metodo para buscar o historico de transações da wallet
+  Future<List<Map<String, dynamic>>> getTransactions({int limit = 20}) async {
+    final endpoint = 'wallet/transactions?limit=$limit';
+
+    final responseData = await _secureGet(endpoint);
+
+    final data = responseData['data'];
+    if (data != null && data['transactions'] is List) {
+      return List<Map<String, dynamic>>.from(data['transactions']);
+    } else {
+      return [];
+    }
   }
 }
