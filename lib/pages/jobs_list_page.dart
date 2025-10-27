@@ -34,22 +34,20 @@ class _JobsListPageState extends State<JobsListPage> {
   double? _maxBudget;
   String _sortBy = 'recent';
 
-  final Map<String, String> _categoryMapping = {
-    'reformas': 'Reformas',
-    'assistencia_tecnica': 'Assistência Técnica',
-    'aulas_particulares': 'Aulas Particulares',
-    'design': 'Design',
-    'consultoria': 'Consultoria',
-    'eletrica': 'Elétrica',
-    'faxina': 'Faxina',
-    'pintura': 'Pintura',
-  };
+  final List<String> _categoryList = ['Reformas',
+    'Assistência Técnica',
+    'Aulas Particulares',
+    'Design',
+    'Consultoria',
+    'Elétrica',
+    'Faxina',
+    'Pintura'];
 
   @override
   void initState() {
     super.initState();
     _currentSearchTerm = widget.searchTerm;
-    _selectedCategory = _normalizeCategoryForDisplay(widget.category);
+    _selectedCategory = widget.category;
     _searchController.text = widget.searchTerm ?? '';
     _loadUserWallet();
     _loadJobs();
@@ -62,21 +60,6 @@ class _JobsListPageState extends State<JobsListPage> {
       });
     } catch (e) {
     }
-  }
-
-  String? _normalizeCategoryForDisplay(String? category) {
-    if (category == null) return null;
-    return _categoryMapping[category.toLowerCase()] ?? category;
-  }
-
-  String? _normalizeCategoryForApi(String? displayCategory) {
-    if (displayCategory == null) return null;
-    return _categoryMapping.entries
-        .firstWhere(
-          (entry) => entry.value == displayCategory,
-      orElse: () => MapEntry(displayCategory.toLowerCase(), displayCategory),
-    )
-        .key;
   }
 
   @override
@@ -92,7 +75,7 @@ class _JobsListPageState extends State<JobsListPage> {
     });
 
     try {
-      final apiCategory = _normalizeCategoryForApi(_selectedCategory);
+      final apiCategory = _selectedCategory;
 
       final jobs = await _jobService.getOpenJobs(
         category: apiCategory,
@@ -177,7 +160,7 @@ class _JobsListPageState extends State<JobsListPage> {
         minBudget: _minBudget,
         maxBudget: _maxBudget,
         sortBy: _sortBy,
-        categories: _categoryMapping.values.toList(),
+        categories: _categoryList,
         onApply: (category, minBudget, maxBudget, sortBy) {
           setState(() {
             _selectedCategory = category;
@@ -211,20 +194,12 @@ class _JobsListPageState extends State<JobsListPage> {
     return count;
   }
 
-  String _getCategoryDisplayName(String? category) {
-    if (category == null) return '';
-    if (_categoryMapping.values.contains(category)) {
-      return category;
-    }
-    return _categoryMapping[category.toLowerCase()] ?? category;
-  }
-
   String _getTitle() {
     if (_currentSearchTerm != null && _currentSearchTerm!.isNotEmpty) {
       return 'Resultados para "${_currentSearchTerm}"';
     }
     if (_selectedCategory != null) {
-      return 'Jobs de ${_getCategoryDisplayName(_selectedCategory)}';
+      return 'Jobs de ${_selectedCategory}';
     }
     return 'Todos os Jobs';
   }
@@ -369,7 +344,7 @@ class _JobsListPageState extends State<JobsListPage> {
                   if (_selectedCategory != null)
                     Chip(
                       avatar: const Icon(Icons.category, size: 18),
-                      label: Text(_getCategoryDisplayName(_selectedCategory)),
+                      label: Text(_selectedCategory!),
                       backgroundColor: Colors.blue[50],
                       deleteIcon: const Icon(Icons.close, size: 18),
                       onDeleted: () {
