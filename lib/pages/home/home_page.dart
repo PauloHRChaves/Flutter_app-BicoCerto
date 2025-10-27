@@ -3,28 +3,48 @@ import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 
+final Map<String, String> categoryMapping = {
+  'Reformas': 'reformas',
+  'Assistência Técnica': 'assistencia_tecnica',
+  'Aulas Particulares': 'aulas_particulares',
+  'Faxina': 'faxina',
+  'Pintura': 'pintura',
+  'Elétrica': 'eletrica'
+};
+
 // ----- Widget (Quadradinhos com as Categorias Populares.)
 class CategoriaCard extends StatelessWidget {
   final IconData icon;
   final String text;
+  final VoidCallback? onTap;
 
-  const CategoriaCard({super.key, required this.icon, required this.text});
+  const CategoriaCard({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: const Color.fromARGB(255, 241, 133, 9), size: 35),
-          const SizedBox(height: 8),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-          ),
-        ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: const Color.fromARGB(255, 241, 133, 9), size: 35),
+            const SizedBox(height: 8),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -41,10 +61,55 @@ void _handleLogin(BuildContext context) {
   Navigator.pushNamed(context, AppRoutes.authWrapper);
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final bool isLoggedIn;
 
   const HomePage({super.key, required this.isLoggedIn});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Controller para capturar o texto digitado
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToJobsList(BuildContext context, String categoryDisplayName) {
+    final categoryKey = categoryMapping[categoryDisplayName] ??
+        categoryDisplayName.toLowerCase().replaceAll(' ', '_');
+    Navigator.pushNamed(
+      context,
+      AppRoutes.jobsList,
+      arguments: {'category': categoryKey},
+    );
+  }
+
+  void _performSearch() {
+    final searchTerm = _searchController.text.trim();
+
+    if (searchTerm.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Digite algo para buscar'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Navega para a lista de jobs com o termo de busca
+    Navigator.pushNamed(
+      context,
+      AppRoutes.jobsList,
+      arguments: {'searchTerm': searchTerm},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +119,7 @@ class HomePage extends StatelessWidget {
     final double fontnormal = screenWidth * 0.04;
     final double fontbold = screenWidth * 0.05;
     final double title = screenWidth * 0.06;
-    
+
     const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
     const Color lightBlue = Color.fromARGB(255, 10, 94, 140);
     const Color accentBlue = Color.fromARGB(255, 74, 58, 255);
@@ -73,7 +138,7 @@ class HomePage extends StatelessWidget {
             padding: EdgeInsets.only(right: screenWidth * 0.04),
             child: OutlinedButton(
               onPressed: () {
-                if (isLoggedIn) {
+                if (widget.isLoggedIn) {
                   _handleLogout(context);
                 } else {
                   _handleLogin(context);
@@ -88,7 +153,7 @@ class HomePage extends StatelessWidget {
                 side: const BorderSide(color: Colors.white, width: 1),
               ),
               child: Text(
-                isLoggedIn ? 'Logout' : 'Login',
+                widget.isLoggedIn ? 'Logout' : 'Login',
                 style: TextStyle(
                   fontSize: screenWidth * 0.05,
                   fontWeight: FontWeight.w600,
@@ -163,6 +228,7 @@ class HomePage extends StatelessWidget {
                         bottom: screenHeight * 0.01,
                       ),
                       child: TextField(
+                        controller: _searchController,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -176,6 +242,8 @@ class HomePage extends StatelessWidget {
                             horizontal: screenHeight * 0.015,
                           ),
                         ),
+                        // Buscar ao pressionar Enter
+                        onSubmitted: (_) => _performSearch(),
                       ),
                     ),
                   ),
@@ -203,8 +271,8 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
 
-                      // AINDA N IMPLEMENTADO
-                      onPressed: () {},
+                      // AGORA IMPLEMENTADO - Buscar ao clicar
+                      onPressed: _performSearch,
 
                       child: Text(
                         "Buscar Serviço",
@@ -231,7 +299,7 @@ class HomePage extends StatelessWidget {
 
                   SizedBox(height: screenHeight * 0.02),
 
-                  // Categorias GridView - MODIFICAR
+                  // Categorias GridView
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -240,34 +308,35 @@ class HomePage extends StatelessWidget {
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.4,
                     children: [
-                      CategoriaCard(icon: Icons.build, text: "Reformas"),
+                      CategoriaCard(
+                        icon: Icons.build,
+                        text: "Reformas",
+                        onTap: () => _navigateToJobsList(context, "Reformas"),
+                      ),
                       CategoriaCard(
                         icon: Icons.electrical_services,
                         text: "Assistência Técnica",
+                        onTap: () => _navigateToJobsList(context, "Assistência Técnica"),
                       ),
                       CategoriaCard(
                         icon: Icons.book,
                         text: "Aulas Particulares",
+                        onTap: () => _navigateToJobsList(context, "Aulas Particulares"),
                       ),
                       CategoriaCard(
                         icon: Icons.design_services,
                         text: "Design",
+                        onTap: () => _navigateToJobsList(context, "Design"),
                       ),
                       CategoriaCard(
                         icon: Icons.show_chart,
-                        text: "Consultoria",
+                        text: "Pintura",
+                        onTap: () => _navigateToJobsList(context, "Pintura"),
                       ),
                       CategoriaCard(
                         icon: Icons.electric_bolt,
-                        text: "Elétrica",
-                      ),
-                      CategoriaCard(
-                        icon: Icons.design_services,
-                        text: "Example 1",
-                      ),
-                      CategoriaCard(
-                        icon: Icons.design_services,
-                        text: "Example 2",
+                        text: "Faxina",
+                        onTap: () => _navigateToJobsList(context, "Faxina"),
                       ),
                     ],
                   ),
@@ -277,7 +346,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            // Banner para de chamada para cadastro como Profissional - Apenas para Client
+            // Banner para de chamada para cadastro como Profissional
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -342,27 +411,25 @@ class HomePage extends StatelessWidget {
             Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.sessionCheck,
-              (route) => route.isFirst,
+                  (route) => route.isFirst,
             );
           } else if (index == 1) {
             Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.ordersPage,
-              (route) => route.isFirst,
+                  (route) => route.isFirst,
             );
           } else if (index == 2) {
             Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.chatRoomsPage,
-              (route) => route.isFirst,
+                  (route) => route.isFirst,
             );
           } else if (index == 3) {
-            // AppRoutes.profileteste -> pagina de teste
-            // AppRoutes.profilePage   -> pagina de uso
             Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.profilePage,
-              (route) => route.isFirst,
+                  (route) => route.isFirst,
             );
           }
         },
