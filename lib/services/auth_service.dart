@@ -49,6 +49,18 @@ class AuthService {
     await _storage.delete(key: 'user_id');
   }
 
+  Future<void> saveAddress(String address) async {
+    await _storage.write(key: 'address', value: address);
+  }
+
+  Future<String?> getAddress() async {
+    return await _storage.read(key: 'address');
+  }
+
+  Future<void> deleteAddress() async {
+    await _storage.delete(key: 'address');
+  }
+
   // ----------------------------------------------------------------------
   // FUNÇÕES AUXILIARES PROTEGIDAS (Para requisições que exigem Token)
   // ----------------------------------------------------------------------
@@ -162,8 +174,10 @@ class AuthService {
       final responseBody = json.decode(response.body);
       final String accessToken = responseBody['data']['access_token'];
       final String userId = responseBody['data']['user']['id'];
+      final String address = responseBody['data']['user']['address'];
       await saveToken(accessToken);
       await saveUserId(userId);
+      await saveAddress(address);
       return responseBody;
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
@@ -197,6 +211,7 @@ class AuthService {
     }
     await deleteToken();
     await deleteUserId();
+    await deleteAddress();
   }
 
   // ESQUECEU A SENHA
@@ -322,6 +337,8 @@ class AuthService {
       "force_replace": false
     };
     final response = await _securePost('wallet/create', body: body);
+
+    await saveAddress(response['data']['address']);
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 
@@ -343,6 +360,8 @@ class AuthService {
     };
     // Usamos a sua função auxiliar _securePost que já trata token e headers
     final response = await _securePost('wallet/import/private-key', body: body);
+
+    await saveAddress(response['data']['address']);
     
     // retorna o "data" que contem wallet_id / adress
     return response['data'] as Map<String, dynamic>? ?? {};

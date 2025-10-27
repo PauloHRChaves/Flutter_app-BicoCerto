@@ -37,6 +37,7 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: isFirstTime ? AppRoutes.welcome : AppRoutes.sessionCheck,
         routes: AppRoutes.routes,
+        onGenerateRoute: AppRoutes.onGenerateRoute,
       ),
     );
   }
