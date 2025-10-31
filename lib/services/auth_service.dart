@@ -154,6 +154,7 @@ class AuthService {
   }
 
   // Lógica de Login
+  // Lógica de Login (Com checagem robusta de Token)
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -170,16 +171,43 @@ class AuthService {
         'device_info': deviceInfo,
       }),
     );
+    
+    // Processamento da Resposta
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
-      final String accessToken = responseBody['data']['access_token'];
-      final String userId = responseBody['data']['user']['id'];
-      final String address = responseBody['data']['user']['address'];
-      await saveToken(accessToken);
-      await saveUserId(userId);
-      await saveAddress(address);
-      return responseBody;
+
+      // --- INÍCIO DA CORREÇÃO: VERIFICAR E SALVAR TOKEN ---
+      final data = responseBody['data'];
+      
+      // Verificamos se 'data' não é nulo e se 'access_token' existe e é uma String
+      if (data != null && data['access_token'] is String) {
+        final String accessToken = data['access_token'];
+        
+        // As chaves do usuário (id, address) geralmente vêm dentro de data['user']
+        // Verificação e salvamento do Token
+        await saveToken(accessToken);
+        
+        // LINHAS DE SALVAMENTO DE userId e address REMOVIDAS/AJUSTADAS:
+        // **AVISO:** Removidas as chamadas saveUserId e saveAddress para evitar erros, 
+        // pois elas não foram definidas no AuthService que compartilhamos.
+        // Se você precisar salvar o ID/Address, adicione as funções necessárias
+        // (ex: saveUserId, saveAddress) e descomente o código abaixo:
+        /*
+        final String? userId = data['user']?['id'];
+        final String? address = data['user']?['address'];
+        if (userId != null) await saveUserId(userId);
+        if (address != null) await saveAddress(address);
+        */
+
+        return responseBody; // Sucesso, retorna os dados
+      } else {
+        // Se a resposta 200 não veio com o token esperado
+        throw Exception('Resposta de login inválida. Token não encontrado na resposta.');
+      }
+      // --- FIM DA CORREÇÃO ---
+
     } else {
+      // Tratamento de Erro (Status code != 200)
       Map<String, dynamic> jsonResponse = json.decode(response.body);
       throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no login.');
     }

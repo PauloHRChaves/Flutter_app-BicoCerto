@@ -6,11 +6,11 @@ class ReplyingToWidget extends StatelessWidget {
   final VoidCallback onCancel;
 
   const ReplyingToWidget({
-    Key? key,
+    super.key,
     required this.userName,
     required this.message,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

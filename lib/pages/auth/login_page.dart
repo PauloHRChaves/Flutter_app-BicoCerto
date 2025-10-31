@@ -3,7 +3,6 @@ import 'package:bico_certo/widgets/wave_clipper.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/home/home_page.dart';
 import 'package:bico_certo/pages/auth/forgot_password_page.dart';
-import 'package:http/http.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/chat_rooms_controller.dart';
 
