@@ -6,10 +6,10 @@ class ChatInputField extends StatefulWidget {
   final Function(bool isTyping) onTypingChanged;
 
   const ChatInputField({
-    Key? key,
+    super.key,
     required this.onSendMessage,
     required this.onTypingChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatInputField> createState() => _ChatInputFieldState();

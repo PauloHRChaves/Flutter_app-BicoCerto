@@ -3,39 +3,52 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import necessário
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
   // Use o endereço do emulador Android para se conectar à sua máquina.
-  final String baseUrl = dotenv.env['BASE_URL'] ?? '';
+  final String baseUrl = dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:8000'; // Fallback para dev
   final _storage = const FlutterSecureStorage();
 
   // ----------------------------------------------------------------------
-  // METODOS ESSENCIAIS - TOKEN
+  // METODOS ESSENCIAIS - TOKEN (COM DEBUG)
   // ----------------------------------------------------------------------
   
   // Salva o token de acesso no armazenamento seguro do dispositivo
   Future<void> saveToken(String token) async {
+    print("🔑 [AuthService] SALVANDO token: $token"); // <-- PRINT DE DEBUG
     await _storage.write(key: 'access_token', value: token);
+    print("🔑 [AuthService] Token salvo!"); // <-- PRINT DE DEBUG
   }
 
   // Recupera o token de acesso
   Future<String?> getToken() async {
-    return await _storage.read(key: 'access_token');
+    print("🔑 [AuthService] LENDO token..."); // <-- PRINT DE DEBUG
+    final token = await _storage.read(key: 'access_token');
+    print("🔑 [AuthService] Token encontrado: ${token != null ? 'Sim' : 'Não'}"); // <-- PRINT DE DEBUG
+    return token;
   }
 
   // Deleta o token
   Future<void> deleteToken() async {
+    print("🔑 [AuthService] DELETANDO token..."); // <-- PRINT DE DEBUG
     await _storage.delete(key: 'access_token');
+    print("🔑 [AuthService] Token deletado."); // <-- PRINT DE DEBUG
   }
   
   // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
-    return token != null;
+    final bool status = token != null;
+    print("🔑 [AuthService] Status de login: $status"); // <-- PRINT DE DEBUG
+    return status;
   }
+
+  // ----------------------------------------------------------------------
+  // MÉTODOS DE ARMAZENAMENTO ADICIONAIS (MANTIDOS)
+  // ----------------------------------------------------------------------
 
   Future<void> saveUserId(String id) async {
     await _storage.write(key: 'user_id', value: id);
@@ -60,6 +73,7 @@ class AuthService {
   Future<void> deleteAddress() async {
     await _storage.delete(key: 'address');
   }
+
 
   // ----------------------------------------------------------------------
   // FUNÇÕES AUXILIARES PROTEGIDAS (Para requisições que exigem Token)
@@ -153,7 +167,7 @@ class AuthService {
     }
   }
 
-  // Lógica de Login
+  // Lógica de Login (Com checagem robusta de Token)
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -170,16 +184,31 @@ class AuthService {
         'device_info': deviceInfo,
       }),
     );
+    
+    // Processamento da Resposta
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
-      final String accessToken = responseBody['data']['access_token'];
-      final String userId = responseBody['data']['user']['id'];
-      final String address = responseBody['data']['user']['address'];
-      await saveToken(accessToken);
-      await saveUserId(userId);
-      await saveAddress(address);
-      return responseBody;
+      final data = responseBody['data'];
+      
+      if (data != null && data['access_token'] is String) {
+        final String accessToken = data['access_token'];
+        
+        // Salvamento do Token
+        await saveToken(accessToken);
+        
+        // Salvamento de UserId e Address (Se existirem)
+        final String? userId = data['user']?['id'];
+        final String? address = data['user']?['address'];
+        if (userId != null) await saveUserId(userId);
+        if (address != null) await saveAddress(address);
+        
+        return responseBody; // Sucesso, retorna os dados
+      } else {
+        throw Exception('Resposta de login inválida. Token não encontrado na resposta.');
+      }
+
     } else {
+      // Tratamento de Erro (Status code != 200)
       Map<String, dynamic> jsonResponse = json.decode(response.body);
       throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no login.');
     }
@@ -200,6 +229,9 @@ class AuthService {
   Future<void> logout() async {
     final token = await getToken();
     
+    await deleteToken();
+    await deleteUserId();
+    await deleteAddress();
     
     if (token != null) {
       await http.post(
@@ -209,9 +241,6 @@ class AuthService {
         },
       );
     }
-    await deleteToken();
-    await deleteUserId();
-    await deleteAddress();
   }
 
   // ESQUECEU A SENHA
@@ -232,7 +261,7 @@ class AuthService {
   }
 
   // RESETAR SENHA
-   Future<Map<String, dynamic>> resetPassword({
+  Future<Map<String, dynamic>> resetPassword({
     required String resetToken,
     required String code,
     required String newPassword,
@@ -292,21 +321,20 @@ class AuthService {
   // MÉTODOS DE PERFIL E WALLET
   // ----------------------------------------------------------------------
   
-  // Obtém o perfil do usuário logado (GET /auth/me)
+  // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
   Future<Map<String, dynamic>> getUserProfile() async {
     final responseData = await _secureGet('auth/me');
     return responseData['data'] as Map<String, dynamic>? ?? {}; 
   }
-
-  // Obtém os detalhes da carteira (GET /wallet/my-wallet)
+  
+  // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
   Future<Map<String, dynamic>> getWalletDetails() async {
     try {
       final responseData = await _secureGet('wallet/my-wallet');
       
       // CASO A: API envia o status de "não tem carteira"
       if (responseData.containsKey('has_wallet')) {
-        // Retorna {'has_wallet': false}
-        return responseData;
+         return responseData; // Retorna {"has_wallet": false, ...}
       }
       
       // CASO B: API envia os detalhes da carteira (Carteira existe).
@@ -316,10 +344,8 @@ class AuthService {
         throw const FormatException("API retornou sucesso, mas houve falha ao enviar os dados.");
       }
       
-      // Conversão segura após a verificação
       final Map<String, dynamic> walletData = walletDataRaw; 
 
-      // Retorna os dados da carteira juntamente com o status de sucesso.
       return {
         'has_wallet': true,
         ...walletData,
@@ -330,7 +356,7 @@ class AuthService {
     }
   }
 
-  // Cria uma nova carteira (POST /wallet/create)
+  // 2. Cria uma nova carteira (POST /wallet/create)
   Future<Map<String, dynamic>> createWallet({required String password}) async {
     final Map<String, dynamic> body = {
       "password": password,
@@ -342,7 +368,7 @@ class AuthService {
     return response['data'] as Map<String, dynamic>? ?? {}; 
   }
 
-  // Obtém o saldo da carteira (GET /wallet/balance)
+  // 3. Obtém o saldo da carteira (GET /wallet/balance)
   Future<Map<String, dynamic>> getBalance() async {
     final response = await _secureGet('wallet/balance');
     return response['data'] as Map<String, dynamic>? ?? {}; 
@@ -366,36 +392,6 @@ class AuthService {
     // retorna o "data" que contem wallet_id / adress
     return response['data'] as Map<String, dynamic>? ?? {};
   }
-  
-  // FUNÇÃO AUXILIAR PARA DELETE WALLET
-  Future<Map<String, dynamic>> _secureDelete(String endpoint, {Map<String, dynamic>? body}) async {
-    final token = await getToken();
-    if (token == null) {
-      throw Exception('Usuário não autenticado.');
-    }
-
-    final response = await http.delete(
-      Uri.parse('$baseUrl/$endpoint'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-      body: body != null ? jsonEncode(body) : null,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 204) { // 204 também é sucesso para delete
-      if (response.body.isEmpty) return {'success': true}; // Retorna sucesso se o corpo for vazio
-      return json.decode(response.body);
-    } else {
-      try {
-        final Map<String, dynamic> errorResponse = json.decode(response.body);
-        if (errorResponse.containsKey('detail')) {
-          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
-        }
-      } catch (_) {}
-      throw Exception('Falha na requisição DELETE. Status: ${response.statusCode}');
-    }
-  }
 
   // Deletar a carteira
   Future<void> deleteWallet({required String password}) async {
@@ -404,7 +400,7 @@ class AuthService {
       body: {'password': password},
     );
   }
-
+  
   // Metodo para transferir dinheiro(ETH)
   Future<Map<String, dynamic>> transferEth({
     required String password,
@@ -435,6 +431,36 @@ class AuthService {
       return List<Map<String, dynamic>>.from(data['transactions']);
     } else {
       return [];
+    }
+  }
+
+  // FUNÇÃO AUXILIAR PARA DELETE
+  Future<Map<String, dynamic>> _secureDelete(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) { // 204 também é sucesso para delete
+      if (response.body.isEmpty) return {'success': true}; // Retorna sucesso se o corpo for vazio
+      return json.decode(response.body);
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição DELETE. Status: ${response.statusCode}');
     }
   }
 }

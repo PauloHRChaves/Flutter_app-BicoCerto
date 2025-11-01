@@ -5,10 +5,10 @@ class ScrollToBottomButton extends StatelessWidget {
   final int unreadCount;
 
   const ScrollToBottomButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.unreadCount,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

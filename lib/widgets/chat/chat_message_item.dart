@@ -10,12 +10,12 @@ class ChatMessageItem extends StatelessWidget {
   final VoidCallback onReply;
 
   const ChatMessageItem({
-    Key? key,
+    super.key,
     required this.message,
     required this.isMe,
     required this.isRead,
     required this.onReply,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

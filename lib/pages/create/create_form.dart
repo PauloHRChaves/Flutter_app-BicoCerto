@@ -191,7 +191,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
   // --------------------------------------------------------------------------------
  
   Future<void> _submitOrder(String password) async {
-    final AuthService _authService = AuthService();
+    final AuthService authService = AuthService();
     
     //-- 2. Validação básica
     if (_titleJobController.text.isEmpty || _selectedCategory == null) {
@@ -204,7 +204,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     
     try{  
       // Chama o serviço de API para criar o trabalho
-      await _authService.createJob(
+      await authService.createJob(
         title: _titleJobController.text,
         description: _descriptionJobController.text,
         category: _selectedCategory!,
