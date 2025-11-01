@@ -19,20 +19,28 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() {
       _isLoading = true;
     });
-    try {
-      await _authService.forgotPassword(email: _emailController.text);
-      if (!mounted) return;
+  try {
+    final response = await _authService.forgotPassword(email: _emailController.text);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Código de redefinição enviado para o seu email!'),
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Código de redefinição enviado para o seu email!'),
+      ),
+    );
+
+    // pega o token retornado, se existir
+    final resetToken = response['data']?['reset_token'];
+
+    if (resetToken != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordPage(token: resetToken),
         ),
       );
-
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
-      );
-    } catch (e) {
+    }
+  } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(

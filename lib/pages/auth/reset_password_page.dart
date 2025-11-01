@@ -5,7 +5,8 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/auth/auth_wrapper.dart';
 
 class ResetPasswordPage extends StatefulWidget {
-  const ResetPasswordPage({super.key});
+  final String? token;
+  const ResetPasswordPage({super.key, this.token});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -17,6 +18,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final TextEditingController _newPasswordController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.token != null) {
+      _tokenController.text = widget.token!;
+    }
+  }
 
   void _handleResetPassword() async {
     setState(() {
@@ -64,11 +74,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               'Insira o token, o código e sua nova senha.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _tokenController,
-              decoration: const InputDecoration(labelText: 'Reset Token'),
             ),
             const SizedBox(height: 10),
             TextField(
