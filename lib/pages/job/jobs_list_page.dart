@@ -197,10 +197,10 @@ class _JobsListPageState extends State<JobsListPage> {
 
   String _getTitle() {
     if (_currentSearchTerm != null && _currentSearchTerm!.isNotEmpty) {
-      return 'Resultados para "${_currentSearchTerm}"';
+      return 'Resultados para "$_currentSearchTerm"';
     }
     if (_selectedCategory != null) {
-      return 'Jobs de ${_selectedCategory}';
+      return 'Jobs de $_selectedCategory';
     }
     return 'Todos os Jobs';
   }
@@ -617,7 +617,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedCategory,
+                      initialValue: _selectedCategory,
                       decoration: InputDecoration(
                         hintText: 'Todas as categorias',
                         border: OutlineInputBorder(

@@ -7,12 +7,12 @@ class RepliedMessageWidget extends StatelessWidget {
   final VoidCallback? onTap;
 
   const RepliedMessageWidget({
-    Key? key,
+    super.key,
     required this.isMe,
     required this.userName,
     required this.message,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

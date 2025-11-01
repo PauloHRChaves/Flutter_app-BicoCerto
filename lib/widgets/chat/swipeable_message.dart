@@ -6,11 +6,11 @@ class SwipeableMessage extends StatefulWidget {
   final bool isMe;
 
   const SwipeableMessage({
-    Key? key,
+    super.key,
     required this.child,
     required this.onReply,
     this.isMe = false,
-  }) : super(key: key);
+  });
 
   @override
   State<SwipeableMessage> createState() => _SwipeableMessageState();

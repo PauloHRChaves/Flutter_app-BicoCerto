@@ -7,7 +7,7 @@ import '../../widgets/bottom_navbar.dart';
 import '../../widgets/chat/chat_room_item.dart';
 
 class ChatRoomsScreen extends StatefulWidget {
-  const ChatRoomsScreen({Key? key}) : super(key: key);
+  const ChatRoomsScreen({super.key});
 
   @override
   State<ChatRoomsScreen> createState() => _ChatRoomsScreenState();

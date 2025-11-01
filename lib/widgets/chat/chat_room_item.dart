@@ -6,10 +6,10 @@ class ChatRoomItem extends StatelessWidget {
   final ChatRoomsController controller;
 
   const ChatRoomItem({
-    Key? key,
+    super.key,
     required this.room,
     required this.controller,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
