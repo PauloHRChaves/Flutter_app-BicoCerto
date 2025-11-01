@@ -174,7 +174,7 @@ class AuthService {
       final responseBody = json.decode(response.body);
       final String accessToken = responseBody['data']['access_token'];
       final String userId = responseBody['data']['user']['id'];
-      final String address = responseBody['data']['user']['address'];
+      final String address = responseBody['data']['user']['address'] ?? "";
       await saveToken(accessToken);
       await saveUserId(userId);
       await saveAddress(address);

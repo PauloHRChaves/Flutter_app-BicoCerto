@@ -2,6 +2,7 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/services/job_service.dart';
+import 'package:bico_certo/pages/job/job_details_page.dart';
 
 class JobsListPage extends StatefulWidget {
   final String? category;
@@ -832,6 +833,12 @@ class JobCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => JobDetailsPage(job: job),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
