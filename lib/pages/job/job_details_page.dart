@@ -1,0 +1,1592 @@
+import 'package:flutter/material.dart';
+import 'package:bico_certo/models/job_model.dart';
+import 'package:bico_certo/services/proposal_service.dart';
+import 'package:bico_certo/services/chat_api_service.dart';
+import 'package:bico_certo/services/auth_service.dart';
+import 'package:intl/intl.dart';
+
+// Constants
+class AppColors {
+  static const primary = Color.fromARGB(255, 22, 76, 110);
+  static const accent = Color.fromARGB(255, 74, 58, 255);
+}
+
+class AppDimensions {
+  static const double borderRadius = 12.0;
+  static const double iconSize = 24.0;
+  static const double avatarRadius = 30.0;
+  static const double spacing = 12.0;
+  static const double spacingLarge = 24.0;
+}
+
+// Formatters Utility
+class DateFormatters {
+  static String formatDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      return isoDate;
+    }
+  }
+
+  static String formatDateTime(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    } catch (e) {
+      return isoDate;
+    }
+  }
+
+  static String formatAmount(dynamic amount) {
+    try {
+      if (amount is String) {
+        return double.parse(amount).toStringAsFixed(2);
+      } else if (amount is double) {
+        return amount.toStringAsFixed(2);
+      } else if (amount is int) {
+        return amount.toDouble().toStringAsFixed(2);
+      }
+      return '0.00';
+    } catch (e) {
+      return '0.00';
+    }
+  }
+}
+
+// Job Helpers
+class JobHelpers {
+  static int getDaysUntilDeadline(String deadline) {
+    try {
+      final deadlineDate = DateTime.parse(deadline);
+      final now = DateTime.now();
+      return deadlineDate.difference(now).inDays;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  static Color getDeadlineColor(int days) {
+    if (days <= 3) return Colors.red;
+    if (days <= 7) return Colors.orange;
+    return Colors.green;
+  }
+
+  static IconData getCategoryIcon(String category) {
+    final categoryLower = category.toLowerCase();
+    if (categoryLower.contains('reforma')) return Icons.build;
+    if (categoryLower.contains('assistência') || categoryLower.contains('tecnica')) {
+      return Icons.electrical_services;
+    }
+    if (categoryLower.contains('aula')) return Icons.book;
+    if (categoryLower.contains('design')) return Icons.design_services;
+    if (categoryLower.contains('pintura')) return Icons.format_paint;
+    if (categoryLower.contains('faxina')) return Icons.cleaning_services;
+    if (categoryLower.contains('elétrica') || categoryLower.contains('eletrica')) {
+      return Icons.electric_bolt;
+    }
+    return Icons.work;
+  }
+}
+
+// Proposal Status Helpers
+class ProposalStatusHelpers {
+  static String getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pendente';
+      case 'accepted':
+        return 'Aceita';
+      case 'rejected':
+        return 'Rejeitada';
+      case 'canceled':
+        return 'Cancelada';
+      default:
+        return status;
+    }
+  }
+
+  static Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'accepted':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'canceled':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  static bool isActiveProposal(Map<String, dynamic>? proposal) {
+    if (proposal == null) return false;
+    final status = proposal['status'].toString().toLowerCase();
+    return status == 'pending' || status == 'accepted';
+  }
+}
+
+class JobDetailsPage extends StatefulWidget {
+  final Job job;
+
+  const JobDetailsPage({
+    super.key,
+    required this.job,
+  });
+
+  @override
+  State<JobDetailsPage> createState() => _JobDetailsPageState();
+}
+
+class _JobDetailsPageState extends State<JobDetailsPage> {
+  final ProposalService _proposalService = ProposalService();
+  final ChatApiService _chatApiService = ChatApiService();
+  final AuthService _authService = AuthService();
+
+  bool _isLoadingChat = false;
+  late int _proposalCount;
+  Map<String, dynamic>? _myProposal;
+  bool _isLoadingProposal = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _proposalCount = widget.job.proposalCount;
+    _loadMyProposal();
+  }
+
+  Future<void> _loadMyProposal() async {
+    setState(() => _isLoadingProposal = true);
+
+    try {
+      final proposal = await _proposalService.getMyProposalForJob(widget.job.jobId);
+      if (mounted) {
+        setState(() {
+          _myProposal = proposal;
+          _isLoadingProposal = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingProposal = false);
+      }
+    }
+  }
+
+  void _onProposalSubmitted() {
+    setState(() => _proposalCount++);
+    _loadMyProposal();
+  }
+
+  Future<void> _cancelProposal() async {
+    if (_myProposal == null) return;
+
+    final password = await _showCancelDialog();
+    if (password == null || password.isEmpty) return;
+
+    _showLoadingDialog();
+
+    try {
+      final result = await _proposalService.cancelProposal(
+        proposalId: _myProposal!['proposal_id'],
+        password: password,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        setState(() {
+          _myProposal = null;
+          _proposalCount = _proposalCount > 0 ? _proposalCount - 1 : 0;
+        });
+        _showSuccessSnackBar(result['message'] ?? 'Proposta cancelada com sucesso');
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Erro ao cancelar proposta');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        _showErrorSnackBar('Erro ao cancelar proposta: $e');
+      }
+    }
+  }
+
+  Future<String?> _showCancelDialog() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => const _CancelProposalDialog(),
+    );
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: AppDimensions.spacing),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showProposalDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: _ProposalForm(
+          job: widget.job,
+          proposalService: _proposalService,
+          onProposalSubmitted: _onProposalSubmitted,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startChatWithClient() async {
+    setState(() => _isLoadingChat = true);
+
+    try {
+      final currentUserId = await _authService.getUserId();
+      if (currentUserId == null) {
+        throw Exception('Usuário não autenticado');
+      }
+
+      final roomData = await _chatApiService.createChatRoom(
+        jobId: widget.job.jobId,
+        providerId: currentUserId,
+        clientId: widget.job.metadata.data.employer.userId,
+      );
+
+      setState(() => _isLoadingChat = false);
+      if (!mounted) return;
+
+      final roomId = roomData['room_id'];
+      if (roomId != null) {
+        Navigator.pushNamed(
+          context,
+          '/chat',
+          arguments: {
+            'roomId': roomId,
+            'jobTitle': widget.job.metadata.data.title,
+          },
+        );
+      } else {
+        throw Exception('Room ID não retornado');
+      }
+    } catch (e) {
+      setState(() => _isLoadingChat = false);
+      if (!mounted) return;
+      _showErrorSnackBar('Erro ao iniciar conversa: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasActiveProposal = ProposalStatusHelpers.isActiveProposal(_myProposal);
+
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _JobHeader(
+              job: widget.job,
+              proposalCount: _proposalCount,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isLoadingProposal)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (hasActiveProposal)
+                    _MyProposalSection(
+                      proposal: _myProposal!,
+                      onCancel: _cancelProposal,
+                    ),
+                  _BudgetSection(maxBudget: widget.job.maxBudget),
+                  const SizedBox(height: AppDimensions.spacingLarge),
+                  _DescriptionSection(description: widget.job.metadata.data.description),
+                  const SizedBox(height: AppDimensions.spacingLarge),
+                  _InformationSection(job: widget.job),
+                  const SizedBox(height: AppDimensions.spacingLarge),
+                  _ClientSection(
+                    job: widget.job,
+                    isLoadingChat: _isLoadingChat,
+                    onChatPressed: _startChatWithClient,
+                  ),
+                  if (_proposalCount > 0 && !hasActiveProposal)
+                    _ProposalStatusSection(proposalCount: _proposalCount),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _BottomActionBar(
+        hasActiveProposal: hasActiveProposal,
+        isLoadingProposal: _isLoadingProposal,
+        onSendProposal: _showProposalDialog,
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text(
+        'Detalhes do Job',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.share),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+}
+
+// Job Header Widget
+class _JobHeader extends StatelessWidget {
+  final Job job;
+  final int proposalCount;
+
+  const _JobHeader({
+    required this.job,
+    required this.proposalCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _CategoryIconBadge(category: job.category),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _JobTitleAndCategory(
+                  title: job.metadata.data.title,
+                  category: job.category,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _InfoChip(
+                icon: Icons.people_outline,
+                label: '$proposalCount propostas',
+              ),
+              _InfoChip(
+                icon: Icons.calendar_today,
+                label: DateFormatters.formatDate(job.deadline),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryIconBadge extends StatelessWidget {
+  final String category;
+
+  const _CategoryIconBadge({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+      ),
+      child: Icon(
+        JobHelpers.getCategoryIcon(category),
+        color: Colors.white,
+        size: 30,
+      ),
+    );
+  }
+}
+
+class _JobTitleAndCategory extends StatelessWidget {
+  final String title;
+  final String category;
+
+  const _JobTitleAndCategory({
+    required this.title,
+    required this.category,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+          ),
+          child: Text(
+            category,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// My Proposal Section
+class _MyProposalSection extends StatelessWidget {
+  final Map<String, dynamic> proposal;
+  final VoidCallback onCancel;
+
+  const _MyProposalSection({
+    required this.proposal,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPending = proposal['status'].toString().toLowerCase() == 'pending';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(
+          icon: Icons.assignment_turned_in,
+          title: 'Minha Proposta',
+        ),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ProposalStatusRow(status: proposal['status']),
+              const Divider(height: 24),
+              _ProposalDetailRow(
+                icon: Icons.attach_money,
+                iconColor: Colors.green[700]!,
+                label: 'Valor: ',
+                value: 'R\$ ${DateFormatters.formatAmount(proposal['amount'])}',
+                valueColor: Colors.green[700],
+              ),
+              const SizedBox(height: AppDimensions.spacing),
+              _ProposalDetailRow(
+                icon: Icons.calendar_today,
+                iconColor: Colors.blue[700]!,
+                label: 'Prazo estimado: ',
+                value: '${proposal['estimated_time_days']} dias',
+              ),
+              const SizedBox(height: AppDimensions.spacing),
+              _ProposalDetailRow(
+                icon: Icons.schedule,
+                iconColor: Colors.purple[700]!,
+                label: 'Enviada em: ',
+                value: DateFormatters.formatDateTime(proposal['created_at']),
+              ),
+              if (isPending) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onCancel,
+                    icon: const Icon(Icons.cancel),
+                    label: const Text('Cancelar Proposta'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Colors.red, width: 2),
+                      foregroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDimensions.spacingLarge),
+      ],
+    );
+  }
+}
+
+class _ProposalStatusRow extends StatelessWidget {
+  final String status;
+
+  const _ProposalStatusRow({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Status',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: ProposalStatusHelpers.getStatusColor(status),
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+          ),
+          child: Text(
+            ProposalStatusHelpers.getStatusText(status),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProposalDetailRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _ProposalDetailRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: iconColor, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Budget Section
+class _BudgetSection extends StatelessWidget {
+  final double maxBudget;
+
+  const _BudgetSection({required this.maxBudget});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(icon: Icons.attach_money, title: 'Orçamento'),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green[50]!, Colors.green[100]!],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.green[200]!, width: 2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Orçamento Máximo',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.green[800],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'R\$ ${DateFormatters.formatAmount(maxBudget)}',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[900],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'O cliente está disposto a pagar até este valor',
+                style: TextStyle(fontSize: 12, color: Colors.green[700]),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Description Section
+class _DescriptionSection extends StatelessWidget {
+  final String description;
+
+  const _DescriptionSection({required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(icon: Icons.description, title: 'Descrição'),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Text(
+            description,
+            style: TextStyle(fontSize: 15, height: 1.5, color: Colors.grey[800]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Information Section
+class _InformationSection extends StatelessWidget {
+  final Job job;
+
+  const _InformationSection({required this.job});
+
+  @override
+  Widget build(BuildContext context) {
+    final daysUntilDeadline = JobHelpers.getDaysUntilDeadline(job.deadline);
+    final deadlineColor = JobHelpers.getDeadlineColor(daysUntilDeadline);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(icon: Icons.info_outline, title: 'Informações'),
+        const SizedBox(height: AppDimensions.spacing),
+        _InfoRow(
+          icon: Icons.location_on,
+          label: 'Localização',
+          value: job.metadata.data.location,
+          color: Colors.red,
+        ),
+        const SizedBox(height: AppDimensions.spacing),
+        _InfoRow(
+          icon: Icons.access_time,
+          label: 'Prazo',
+          value: '$daysUntilDeadline dias restantes',
+          color: deadlineColor,
+        ),
+        const SizedBox(height: AppDimensions.spacing),
+        _InfoRow(
+          icon: Icons.calendar_today,
+          label: 'Data Limite',
+          value: DateFormatters.formatDate(job.deadline),
+          color: Colors.blue,
+        ),
+        const SizedBox(height: AppDimensions.spacing),
+        _InfoRow(
+          icon: Icons.schedule,
+          label: 'Publicado em',
+          value: DateFormatters.formatDateTime(job.metadata.data.createdAt),
+          color: Colors.purple,
+        ),
+      ],
+    );
+  }
+}
+
+// Client Section
+class _ClientSection extends StatelessWidget {
+  final Job job;
+  final bool isLoadingChat;
+  final VoidCallback onChatPressed;
+
+  const _ClientSection({
+    required this.job,
+    required this.isLoadingChat,
+    required this.onChatPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(icon: Icons.person, title: 'Cliente'),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: AppDimensions.avatarRadius,
+                    backgroundColor: Colors.blue[700],
+                    child: Text(
+                      job.metadata.data.employer.name?.substring(0, 1).toUpperCase() ?? 'C',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job.metadata.data.employer.name ?? 'Cliente',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Membro desde ${DateFormatters.formatDate(job.metadata.data.createdAt)}',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: isLoadingChat ? null : onChatPressed,
+                  icon: isLoadingChat
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Icon(Icons.chat_bubble_outline),
+                  label: Text(isLoadingChat ? 'Iniciando...' : 'Conversar com Cliente'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: Colors.blue[700]!, width: 2),
+                    foregroundColor: Colors.blue[700],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Proposal Status Section
+class _ProposalStatusSection extends StatelessWidget {
+  final int proposalCount;
+
+  const _ProposalStatusSection({required this.proposalCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppDimensions.spacingLarge),
+        const _SectionTitle(icon: Icons.assignment, title: 'Status das Propostas'),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange[50],
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(color: Colors.orange[200]!),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange[700], size: 24),
+              const SizedBox(width: AppDimensions.spacing),
+              Expanded(
+                child: Text(
+                  'Este job já possui $proposalCount proposta(s). Envie a sua e destaque-se!',
+                  style: TextStyle(fontSize: 14, color: Colors.orange[900]),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Bottom Action Bar
+class _BottomActionBar extends StatelessWidget {
+  final bool hasActiveProposal;
+  final bool isLoadingProposal;
+  final VoidCallback onSendProposal;
+
+  const _BottomActionBar({
+    required this.hasActiveProposal,
+    required this.isLoadingProposal,
+    required this.onSendProposal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: hasActiveProposal
+            ? _buildProposalSentButton()
+            : _buildSendProposalButton(isLoadingProposal, onSendProposal),
+      ),
+    );
+  }
+
+  Widget _buildProposalSentButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle, color: Colors.grey),
+          SizedBox(width: 8),
+          Text(
+            'Proposta Enviada',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendProposalButton(bool isLoading, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: isLoading ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        ),
+        elevation: 3,
+      ),
+      child: isLoading
+          ? const SizedBox(
+        height: 20,
+        width: 20,
+        child: CircularProgressIndicator(
+          color: Colors.white,
+          strokeWidth: 2,
+        ),
+      )
+          : const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.send, color: Colors.white),
+          SizedBox(width: 8),
+          Text(
+            'Enviar Proposta',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Reusable Components
+class _SectionTitle extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const _SectionTitle({
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: AppDimensions.iconSize),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: AppDimensions.spacing),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Dialogs
+class _CancelProposalDialog extends StatefulWidget {
+  const _CancelProposalDialog();
+
+  @override
+  State<_CancelProposalDialog> createState() => _CancelProposalDialogState();
+}
+
+class _CancelProposalDialogState extends State<_CancelProposalDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.warning, color: Colors.orange),
+          SizedBox(width: AppDimensions.spacing),
+          Text('Cancelar Proposta'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tem certeza que deseja cancelar sua proposta? Esta ação não pode ser desfeita.',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Senha da Carteira',
+              hintText: 'Digite sua senha',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+              ),
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Não, manter'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_passwordController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Por favor, digite sua senha'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            Navigator.pop(context, _passwordController.text);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Sim, cancelar'),
+        ),
+      ],
+    );
+  }
+}
+
+// Proposal Form
+class _ProposalForm extends StatefulWidget {
+  final Job job;
+  final ProposalService proposalService;
+  final VoidCallback onProposalSubmitted;
+
+  const _ProposalForm({
+    required this.job,
+    required this.proposalService,
+    required this.onProposalSubmitted,
+  });
+
+  @override
+  State<_ProposalForm> createState() => _ProposalFormState();
+}
+
+class _ProposalFormState extends State<_ProposalForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _descriptionController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _timeController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isSubmitting = false;
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
+    _timeController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitProposal() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final result = await widget.proposalService.submitProposal(
+        jobId: widget.job.jobId,
+        description: _descriptionController.text.trim(),
+        amountEth: double.parse(_amountController.text),
+        estimatedTimeDays: int.parse(_timeController.text),
+        password: _passwordController.text,
+      );
+
+      setState(() => _isSubmitting = false);
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        widget.onProposalSubmitted();
+        _showSuccessMessages(result);
+      } else {
+        _showErrorMessage(result['message'] ?? 'Erro ao enviar proposta');
+      }
+    } catch (e) {
+      setState(() => _isSubmitting = false);
+      if (!mounted) return;
+      _showErrorMessage('Erro ao enviar proposta: $e');
+    }
+  }
+
+  void _showSuccessMessages(Map<String, dynamic> result) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: AppDimensions.spacing),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Proposta enviada!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    result['message'] ?? 'Sua proposta foi enviada com sucesso',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue),
+            SizedBox(width: AppDimensions.spacing),
+            Text('Proposta Enviada'),
+          ],
+        ),
+        content: const Text(
+          'Sua proposta foi enviada com sucesso! '
+              'O cliente receberá uma notificação e poderá entrar em contato com você.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 8),
+            _buildBudgetInfo(),
+            const SizedBox(height: AppDimensions.spacingLarge),
+            _buildDescriptionField(),
+            const SizedBox(height: 16),
+            _buildAmountField(),
+            const SizedBox(height: 16),
+            _buildTimeField(),
+            const SizedBox(height: 16),
+            _buildPasswordField(),
+            const SizedBox(height: 8),
+            _buildPasswordHint(),
+            const SizedBox(height: AppDimensions.spacingLarge),
+            _buildSubmitButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Enviar Proposta',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBudgetInfo() {
+    return Text(
+      'Orçamento máximo: R\$ ${widget.job.maxBudget.toStringAsFixed(2)}',
+      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return TextFormField(
+      controller: _descriptionController,
+      maxLines: 4,
+      decoration: InputDecoration(
+        labelText: 'Descrição da sua proposta',
+        hintText: 'Descreva como você realizará o trabalho...',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        ),
+        prefixIcon: const Icon(Icons.description),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor, descreva sua proposta';
+        }
+        if (value.length < 20) {
+          return 'A descrição deve ter pelo menos 20 caracteres';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildAmountField() {
+    return TextFormField(
+      controller: _amountController,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: 'Valor da proposta (R\$)',
+        hintText: '0.00',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        ),
+        prefixIcon: const Icon(Icons.attach_money),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor, informe o valor';
+        }
+        final amount = double.tryParse(value);
+        if (amount == null || amount <= 0) {
+          return 'Valor inválido';
+        }
+        if (amount > widget.job.maxBudget) {
+          return 'Valor acima do orçamento máximo';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildTimeField() {
+    return TextFormField(
+      controller: _timeController,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: 'Tempo estimado (dias)',
+        hintText: 'Ex: 7',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        ),
+        prefixIcon: const Icon(Icons.calendar_today),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor, informe o tempo estimado';
+        }
+        final days = int.tryParse(value);
+        if (days == null || days <= 0) {
+          return 'Tempo inválido';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        labelText: 'Senha da Carteira',
+        hintText: 'Digite sua senha para assinar a transação',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        ),
+        prefixIcon: const Icon(Icons.lock),
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor, informe sua senha';
+        }
+        if (value.length < 6) {
+          return 'A senha deve ter pelo menos 6 caracteres';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordHint() {
+    return Text(
+      'Sua senha é necessária para assinar a transação na blockchain',
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey[600],
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isSubmitting ? null : _submitProposal,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+          ),
+          disabledBackgroundColor: Colors.grey,
+        ),
+        child: _isSubmitting
+            ? const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
+            : const Text(
+          'Enviar Proposta',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}

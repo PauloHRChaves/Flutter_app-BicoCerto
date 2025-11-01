@@ -1,3 +1,4 @@
+import 'package:bico_certo/pages/job/job_details_page.dart';
 import 'package:flutter/material.dart';
 
 import 'package:bico_certo/pages/welcome_page.dart';
@@ -22,7 +23,9 @@ import 'package:bico_certo/pages/create/create_info.dart';
 import 'package:bico_certo/pages/create/create_form.dart';
 import 'package:bico_certo/pages/chat/chat_rooms_page.dart';
 import 'package:bico_certo/pages/chat/chat_page.dart';
-import 'package:bico_certo/pages/jobs_list_page.dart';
+import 'package:bico_certo/pages/job/jobs_list_page.dart';
+
+import 'models/job_model.dart';
 
 class AppRoutes {
   // Rotas Essenciais
@@ -57,6 +60,7 @@ class AppRoutes {
 
   // ROTA PARA LISTAGEM DE JOBS
   static const String jobsList = '/jobs-list';
+  static const String jobDetails = '/job-details';
 
   static Map<String, Widget Function(BuildContext)> get routes => {
     // Rotas Essenciais
@@ -99,7 +103,12 @@ class AppRoutes {
           ),
           settings: settings,
         );
-
+      case jobDetails:
+        final job = settings.arguments as Job;
+        return MaterialPageRoute(
+          builder: (_) => JobDetailsPage(job: job),
+          settings: settings,
+        );
       case chatPage:
         final args = settings.arguments;
         if (args != null) {
