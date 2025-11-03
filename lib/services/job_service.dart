@@ -144,6 +144,27 @@ class JobService {
     }
   }
 
+  Future<Job> getJobById(String jobId) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/jobs/job/$jobId/info'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        return Job.fromJson(data['data']);
+      } else {
+        throw Exception('Erro ao buscar job');
+      }
+    } catch (e) {
+      throw Exception('Erro ao buscar job: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> acceptProposal({
     required String proposalId,
     required String password,

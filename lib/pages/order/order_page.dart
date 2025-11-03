@@ -79,6 +79,47 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
     ]);
   }
 
+  Future<void> _navigateToJobDetails(String jobId) async {
+    try {
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final job = await _jobService.getJobById(jobId);
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => JobDetailsPage(job: job),
+        ),
+      );
+
+      if (result == true) {
+        _loadMyProposals();
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao carregar detalhes do job: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _loadMyProposals() async {
     setState(() {
       _isLoadingProposals = true;
@@ -461,6 +502,9 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
                   onUpdate: _loadMyProposals,
                   onTap: () {
                     final jobId = _filteredProposals[index]['job_id'];
+                    if (jobId != null) {
+                      _navigateToJobDetails(jobId.toString());
+                    }
                   },
                 );
               },
@@ -1505,7 +1549,7 @@ class ProposalCard extends StatelessWidget {
                       children: [
                         if (proposal['job'] != null) ...[
                           Text(
-                            proposal['job']['service_type'] ?? 'N/A',
+                            proposal['job']['metadata']['data']['title'].toString() ?? 'N/A',
                             style: TextStyle(
                               fontSize: screenWidth * 0.042,
                               fontWeight: FontWeight.bold,
@@ -1514,6 +1558,13 @@ class ProposalCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
+                          Text(
+                            proposal['job']['service_type'],
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.028,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
                       ],
                     ),
