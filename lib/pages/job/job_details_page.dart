@@ -239,6 +239,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
   void _onProposalSubmitted() {
     setState(() => _proposalCount++);
+    Navigator.pop(context, true);
     _loadMyProposal();
   }
 
@@ -265,6 +266,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
           _proposalCount = _proposalCount > 0 ? _proposalCount - 1 : 0;
         });
         _showSuccessSnackBar(result['message'] ?? 'Proposta cancelada com sucesso');
+        Navigator.pop(context, true);
       } else {
         _showErrorSnackBar(result['message'] ?? 'Erro ao cancelar proposta');
       }
