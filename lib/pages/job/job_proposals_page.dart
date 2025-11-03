@@ -67,6 +67,7 @@ class _JobProposalsPageState extends State<JobProposalsPage> {
 
       if (result['success'] == true) {
         _showSuccessSnackBar(result['message'] ?? 'Proposta aceita com sucesso');
+        Navigator.pop(context, true);
         _loadProposals();
       } else {
         _showErrorSnackBar(result['message'] ?? 'Erro ao aceitar proposta');

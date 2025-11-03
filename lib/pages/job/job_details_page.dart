@@ -564,13 +564,17 @@ class _OwnerSection extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => JobProposalsPage(job: job),
                         ),
                       );
+
+                      if (result == true && context.mounted) {
+                        Navigator.pop(context, true);
+                      }
                     },
                     icon: const Icon(Icons.list_alt),
                     label: Text(

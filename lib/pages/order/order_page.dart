@@ -458,6 +458,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               itemBuilder: (context, index) {
                 return ProposalCard(
                   proposal: _filteredProposals[index],
+                  onUpdate: _loadMyProposals,
                   onTap: () {
                     final jobId = _filteredProposals[index]['job_id'];
                   },
@@ -491,7 +492,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               padding: const EdgeInsets.all(16),
               itemCount: _filteredJobs.length,
               itemBuilder: (context, index) {
-                return JobCard(job: _filteredJobs[index]);
+                return JobCard(job: _filteredJobs[index], onUpdate: _loadMyJobs);
               },
             ),
           ),
@@ -1468,11 +1469,13 @@ class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
 class ProposalCard extends StatelessWidget {
   final Map<String, dynamic> proposal;
   final VoidCallback? onTap;
+  final VoidCallback? onUpdate;
 
   const ProposalCard({
     super.key,
     required this.proposal,
     this.onTap,
+    this.onUpdate,
   });
 
   @override
@@ -1593,8 +1596,9 @@ class ProposalCard extends StatelessWidget {
 
 class JobCard extends StatelessWidget {
   final Job job;
+  final VoidCallback? onUpdate;
 
-  const JobCard({super.key, required this.job});
+  const JobCard({super.key, required this.job, this.onUpdate});
 
   @override
   Widget build(BuildContext context) {
@@ -1609,13 +1613,17 @@ class JobCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => JobDetailsPage(job: job),
             ),
           );
+
+          if (result == true && onUpdate != null) {
+            onUpdate!();
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -1723,13 +1731,17 @@ class JobCard extends StatelessWidget {
                   ),
                     if (isOpen) ...[
                   ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => JobProposalsPage(job: job),
                         ),
                       );
+
+                      if (result == true && onUpdate != null) {
+                        onUpdate!();
+                      }
                     },
                     icon: const Icon(Icons.list_alt, size: 16),
                     label: const Text('Ver propostas'),
