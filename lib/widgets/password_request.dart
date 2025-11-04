@@ -10,7 +10,6 @@ const Color lightBackground = Colors.white;
 typedef ConfirmationCallback = Future<void> Function(String password);
 
 class PasswordConfirmationWidget extends StatefulWidget {
-  // 2. Parâmetros Necessários
   final ConfirmationCallback onConfirm;
   final String confirmationText;
 
@@ -28,17 +27,17 @@ class PasswordConfirmationWidget extends StatefulWidget {
 class _PasswordConfirmationWidgetState extends State<PasswordConfirmationWidget> {
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
   bool _isLoading = false;
+  bool _passwordVisible = false;
 
-  // 3. Função para Lidar com a Confirmação
   Future<void> _handleConfirmation() async {
-    // Valida o formulário. Se for válido, continua.
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     setState(() {
-      _isLoading = true; // Inicia o estado de loading
+      _isLoading = true;
     });
 
     final String password = _passwordController.text;
@@ -63,7 +62,7 @@ class _PasswordConfirmationWidgetState extends State<PasswordConfirmationWidget>
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false; // Termina o estado de loading
+          _isLoading = false;
         });
       }
     }
@@ -73,6 +72,18 @@ class _PasswordConfirmationWidgetState extends State<PasswordConfirmationWidget>
   void dispose() {
     _passwordController.dispose();
     super.dispose();
+  }
+
+  InputDecoration _inputDecorationPass(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
   }
 
   @override
@@ -94,19 +105,22 @@ class _PasswordConfirmationWidgetState extends State<PasswordConfirmationWidget>
             const SizedBox(height: 30),
             TextFormField(
               controller: _passwordController,
-              obscureText: true,
-              keyboardType: TextInputType.visiblePassword,
-              decoration: InputDecoration(
-                labelText: 'Sua Senha',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              decoration: _inputDecorationPass('Senha').copyWith(
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _passwordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _passwordVisible = !_passwordVisible;
+                    });
+                  },
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor, insira sua senha.';
-                }
-                return null;
-              },
+              obscureText: !_passwordVisible,
+              validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
             ),
             const SizedBox(height: 40),
             _isLoading
@@ -121,10 +135,11 @@ class _PasswordConfirmationWidgetState extends State<PasswordConfirmationWidget>
                           borderRadius: BorderRadius.circular(10)),
                     ),
                     child: Text(
-                      widget.confirmationText, // Usa o texto de confirmação
+                      widget.confirmationText,
                       style: const TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
+            const SizedBox(height: 20)
           ],
         ),
       ),
