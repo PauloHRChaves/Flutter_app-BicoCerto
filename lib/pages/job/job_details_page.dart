@@ -168,6 +168,50 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     }
   }
 
+  Future<void> _approveJob() async {
+    final result = await _showApproveJobDialog();
+    if (result == null) return;
+
+    final password = result['password'] as String;
+    final rating = result['rating'] as int;
+
+    _showLoadingDialog();
+
+    try {
+      final result = await _jobService.approveJob(
+        jobId: widget.job.jobId,
+        rating: rating,
+        password: password,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        _showSuccessSnackBar(result['message'] ?? 'Job aprovado com sucesso!');
+
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Erro ao aprovar job');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Fechar loading
+        _showErrorSnackBar('Erro ao aprovar job: $e');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>?> _showApproveJobDialog() {
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => const _ApproveJobDialog(),
+    );
+  }
+
   Future<void> _completeJob() async {
     final password = await _showCompleteJobDialog();
     if (password == null || password.isEmpty) return;
@@ -468,8 +512,13 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                     _OwnerSection(
                       job: widget.job,
                       proposalCount: _proposalCount,
-                    )
-                  else ...[
+                    ),
+                    if (_isJobOwner && widget.job.status == JobStatus.completed)
+                        _ApproveJobSection(
+                        job: widget.job,
+                        onApproveJob: _approveJob,
+                      ),
+                  if (!_isJobOwner) ...[
                     if (isLoading)
                       const Center(
                         child: Padding(
@@ -2725,6 +2774,365 @@ class _ProposalFormState extends State<_ProposalForm> {
     );
   }
 }
+
+class _ApproveJobSection extends StatelessWidget {
+  final Job job;
+  final VoidCallback onApproveJob;
+
+  const _ApproveJobSection({
+    required this.job,
+    required this.onApproveJob,
+  });
+
+  Map<String, dynamic>? _getApprovalDeadlineInfo() {
+    try {
+      final completedAtStr = job.completedAt;
+      if (completedAtStr.isEmpty) return null;
+
+      final completedAt = DateTime.parse(completedAtStr);
+      final approvalDeadline = completedAt.add(const Duration(days: 3));
+      final now = DateTime.now();
+      final timeRemaining = approvalDeadline.difference(now);
+
+      return {
+        'timeRemaining': timeRemaining,
+        'isExpired': timeRemaining.isNegative,
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  String _formatTimeRemaining(Duration duration) {
+    if (duration.inDays > 0) {
+      final days = duration.inDays;
+      final hours = duration.inHours % 24;
+      return '$days ${days == 1 ? 'dia' : 'dias'} e $hours ${hours == 1 ? 'hora' : 'horas'}';
+    } else if (duration.inHours > 0) {
+      final hours = duration.inHours;
+      return '$hours ${hours == 1 ? 'hora' : 'horas'}';
+    } else {
+      final minutes = duration.inMinutes;
+      return '$minutes ${minutes == 1 ? 'minuto' : 'minutos'}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final approvalInfo = _getApprovalDeadlineInfo();
+    final isExpired = approvalInfo?['isExpired'] ?? false;
+    final timeRemaining = approvalInfo?['timeRemaining'] as Duration?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(
+          icon: Icons.task_alt,
+          title: 'Aprovação do Trabalho',
+        ),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isExpired
+                  ? [Colors.red[50]!, Colors.red[100]!]
+                  : [Colors.blue[50]!, Colors.blue[100]!],
+            ),
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(
+              color: isExpired ? Colors.red[300]! : Colors.blue[300]!,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isExpired ? Colors.red[600] : Colors.blue[600],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isExpired ? Icons.warning_amber : Icons.check_circle_outline,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isExpired
+                              ? 'Prazo de Aprovação Expirado!'
+                              : 'Trabalho Aguardando Aprovação',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isExpired ? Colors.red[900] : Colors.blue[900],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isExpired
+                              ? 'Aprove o trabalho o quanto antes'
+                              : 'O prestador concluiu o trabalho',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isExpired ? Colors.red[700] : Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              if (timeRemaining != null && !isExpired) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time, size: 20, color: Colors.blue[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tempo restante: ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      Text(
+                        _formatTimeRemaining(timeRemaining),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onApproveJob,
+                  icon: const Icon(Icons.verified, color: Colors.white),
+                  label: const Text('Aprovar e Liberar Pagamento'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isExpired ? Colors.red[600] : Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.blue[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ao aprovar, você avaliará o trabalho e o pagamento será liberado automaticamente para o prestador.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDimensions.spacingLarge),
+      ],
+    );
+  }
+}
+
+class _ApproveJobDialog extends StatefulWidget {
+  const _ApproveJobDialog();
+
+  @override
+  State<_ApproveJobDialog> createState() => _ApproveJobDialogState();
+}
+
+class _ApproveJobDialogState extends State<_ApproveJobDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  int _rating = 5;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.verified, color: Colors.blue),
+          SizedBox(width: AppDimensions.spacing),
+          Text('Aprovar Trabalho'),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Você está prestes a aprovar este trabalho. '
+                  'O pagamento será liberado automaticamente para o prestador.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+
+            // Avaliação com estrelas
+            const Text(
+              'Avalie o trabalho do prestador:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(
+                      index < _rating ? Icons.star : Icons.star_border,
+                      size: 40,
+                      color: Colors.amber[700],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _rating = index + 1;
+                      });
+                    },
+                  );
+                }),
+              ),
+            ),
+            Center(
+              child: Text(
+                _getRatingText(_rating),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber[700],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Campo de senha
+            TextField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: 'Senha da Carteira',
+                hintText: 'Digite sua senha',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                ),
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_passwordController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Por favor, digite sua senha'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            Navigator.pop(context, {
+              'password': _passwordController.text,
+              'rating': _rating,
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue[600],
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Aprovar'),
+        ),
+      ],
+    );
+  }
+
+  String _getRatingText(int rating) {
+    switch (rating) {
+      case 1:
+        return 'Muito Ruim';
+      case 2:
+        return 'Ruim';
+      case 3:
+        return 'Regular';
+      case 4:
+        return 'Bom';
+      case 5:
+        return 'Excelente';
+      default:
+        return '';
+    }
+  }
+}
+
 
 class _CompleteJobSection extends StatelessWidget {
   final VoidCallback onCompleteJob;

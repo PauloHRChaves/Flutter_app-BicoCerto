@@ -28,7 +28,7 @@ class JobService {
         Uri.parse('$baseUrl/jobs/reputation?address=$address'),
         headers: headers,
       );
-      print(response);
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return {
@@ -45,6 +45,45 @@ class JobService {
       return {
         'success': false,
         'message': 'Erro: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> approveJob({
+    required String jobId,
+    required int rating,
+    required String password,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/jobs/approve'),
+        headers: headers,
+          body: json.encode({
+          'job_id': jobId,
+          'rating': rating,
+          'password': password,
+        }),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Job aprovado com sucesso!',
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erro ao aprovar job',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Erro ao aprovar job: $e',
       };
     }
   }

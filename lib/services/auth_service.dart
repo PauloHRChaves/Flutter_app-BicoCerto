@@ -90,6 +90,8 @@ class AuthService {
       Uri.parse('$baseUrl/$endpoint'),
       headers: <String, String>{
         'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+
       },
     );
 
@@ -116,6 +118,7 @@ class AuthService {
     final Map<String, String> headers = {
       'Content-Type': 'application/json; charset=UTF-8',
       'Authorization': 'Bearer $token',
+      'ngrok-skip-browser-warning': 'true',
     };
 
     final response = await http.post(
