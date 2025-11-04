@@ -1,81 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter/services.dart';
 import 'package:bico_certo/widgets/password_request.dart'; 
-
-
-class PhotoInputWidget extends StatelessWidget {
-  
-
-  final List<String> photoUrls;
-  final VoidCallback onAddPhoto;
-
-  const PhotoInputWidget({
-    super.key,
-    required this.photoUrls,
-    required this.onAddPhoto,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Fotos (Opcional)", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: photoUrls.length + 1, // +1 para o botão de adicionar
-            itemBuilder: (context, index) {
-              if (index == photoUrls.length) {
-                // Botão de Adicionar Foto
-                return GestureDetector(
-                  onTap: onAddPhoto,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade400, width: 1.5),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_a_photo, color: Colors.grey, size: 30),
-                        SizedBox(height: 4),
-                        Text("Adicionar", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              
-              // Exibição das Fotos (Simulação com Placeholders)
-              return Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    photoUrls[index],
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
+import 'package:bico_certo/widgets/photo_createjob.dart';
 
 class CurrencyInputFormatter extends TextInputFormatter {
 
@@ -149,7 +80,54 @@ class _CreateOrderPageState extends State<CreateJobPage> {
   final List<String> _categories = [
     'Reformas', 'Assistência Técnica', 'Aulas Particulares', 'Design', 'Consultoria', 'Elétrica'
   ];
+  final List<File> _jobPhotos = [];
+  final ImagePicker _picker = ImagePicker();
 
+  Future<void> _pickImage() async {
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Escolher Imagem'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galeria de Fotos'),
+                onTap: () {
+                  Navigator.of(context).pop(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Câmera'),
+                onTap: () {
+                  Navigator.of(context).pop(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source != null) {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1000, // Opcional: Limita a resolução para economizar banda/espaço
+        imageQuality: 70, // Opcional: Limita a qualidade da imagem
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          // Adiciona o novo arquivo à lista
+          _jobPhotos.add(File(pickedFile.path));
+        });
+      }
+    }
+  }
+  
   // Função para abrir o seletor, coletar data, e formata-la.
   Future<void> _selectDate(BuildContext context) async {
 
@@ -204,6 +182,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     
     try{  
       // Chama o serviço de API para criar o trabalho
+
       await authService.createJob(
         title: _titleJobController.text,
         description: _descriptionJobController.text,
@@ -212,8 +191,10 @@ class _CreateOrderPageState extends State<CreateJobPage> {
         budget: _treatedBugdet(_budgetController.text), 
         deadline: _selectedDateFormated,
         password: password, 
+        
       );
       
+      await authService.uploadJobPhotos(_jobPhotos);
     //------------------------CAMPO DE TESTES DE ENVIO -----------------------------
     /*
       final data = {
@@ -251,8 +232,8 @@ class _CreateOrderPageState extends State<CreateJobPage> {
       );
     }
   }
-  // ---------------------------FIM DA LÓGICA DE ENVIO-------------------------------
   
+  // ---------------------------FIM DA LÓGICA DE ENVIO------------------------------- 
   void _showConfirmationModal(
     BuildContext context, 
     String buttonText, 
@@ -292,7 +273,6 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     );
   }
   
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -325,9 +305,14 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
             // Entrada de Fotos
             PhotoInputWidget(
-              photoUrls: [], 
-              onAddPhoto: (){},
-            ),
+              photoFiles: _jobPhotos, 
+              onAddPhoto: _pickImage, // Função de seleção de imagem
+              onRemovePhoto: (index) { 
+                setState(() {
+                    _jobPhotos.removeAt(index);
+                  });
+                },
+              ),
             const SizedBox(height: 20),
 
             // Data Estipulada de Término
@@ -473,12 +458,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
           ),
         ),
       ],
-    );
-
-
-
-
-    
+    );    
   }
   // Campo de Entrada de Valor (Moeda) - Sem Pacote Externo
   Widget _buildCurrencyFieldWithoutPackage(

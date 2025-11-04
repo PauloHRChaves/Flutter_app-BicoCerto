@@ -22,11 +22,17 @@ dependencies:
   # Fonts
   google_fonts: ^6.3.2
   # Dashboard - Graficos
-  fl_chart: ^0.68.0
-  intl: ^0.18.1
-  web_socket_channel: ^2.4.0
+  fl_chart: ^1.1.1
+  intl: ^0.20.2
+  web_socket_channel: ^3.0.3
   provider: ^6.1.1
-  flutter_dotenv: ^5.1.0
+  flutter_dotenv: ^6.0.0
+  flutter_map: ^8.2.2 # Use a versão mais recente
+  latlong2: ^0.9.1 # Use a versão mais recente
+  geocoding: ^4.0.0 # Use a versão mais recente
+  image_picker: ^1.0.4
+
+
 
 dev_dependencies:
   flutter_test:
