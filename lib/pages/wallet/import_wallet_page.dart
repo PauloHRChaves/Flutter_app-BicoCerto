@@ -18,7 +18,8 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
   final _authService = AuthService();
 
   bool _isLoading = false;
-
+  bool _passwordVisible = false;
+  
   @override
   void dispose() {
     _privateKeyController.dispose();
@@ -78,13 +79,25 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
     }
   }
 
+  InputDecoration _inputDecorationPass(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Importar Carteira'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+          backgroundColor: Color.fromARGB(255, 25, 118, 210),
+          elevation: 1,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        title: const Text('Importar Carteira', style: TextStyle(color: Colors.white, fontSize: 25)),
         foregroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
@@ -104,7 +117,7 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
               // Campo para a Chave Privada
               TextFormField(
                 controller: _privateKeyController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Chave Privada',
                   border: OutlineInputBorder(),
                   hintText: 'Cole sua chave privada aqui',
@@ -121,35 +134,39 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
               // Campo para a Senha
               TextFormField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Sua Senha',
-                  border: OutlineInputBorder(),
-                  hintText: 'Senha de acesso da sua conta',
+                decoration: _inputDecorationPass('Senha').copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira sua senha.';
-                  }
-                  return null;
-                },
+                obscureText: !_passwordVisible,
+                validator: (value) => value!.isEmpty ? 'A senha é obrigatória' : null,
               ),
-              const SizedBox(height: 40),
 
+              const SizedBox(height: 40),
               // Botão de Importar
               ElevatedButton(
                 onPressed: _isLoading ? null : _importWallet,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  backgroundColor: Color.fromARGB(255, 25, 116, 172),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                         'Importar Carteira',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        
                       ),
               ),
             ],

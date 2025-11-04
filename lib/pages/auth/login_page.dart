@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:bico_certo/widgets/wave_clipper.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/home/home_page.dart';
 import 'package:bico_certo/pages/auth/forgot_password_page.dart';
@@ -115,18 +114,20 @@ class LoginPageState extends State<LoginPage> {
     const Color textblack = Color.fromARGB(255, 33, 33, 33);
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: darkBlue),
+        appBar: AppBar(
+          backgroundColor: darkBlue,
+          elevation: 1,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text(
+            "Login",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Transform.translate(
-              offset: const Offset(0, -130),
-              child: ClipPath(
-                clipper: WaveClipper(),
-                child: Container(color: darkBlue),
-              ),
-            ),
-          ),
 
           Center(
             child: SingleChildScrollView(
@@ -246,7 +247,7 @@ class LoginPageState extends State<LoginPage> {
                       // Usa o callback passado do AuthWrapper para mudar a tela
                       onPressed: () => widget.onRegisterPressed(),
                       child: Text(
-                        'Ainda não possui uma conta? Registrar',
+                        'Ainda não possui uma conta? Cadastre-se',
                         style: TextStyle(
                           fontSize: font,
                           fontFamily: 'Inter',

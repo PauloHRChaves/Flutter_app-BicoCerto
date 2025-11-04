@@ -61,9 +61,20 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Redefinir Senha'),
+        backgroundColor: darkBlue,
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          "Redefinir senha",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

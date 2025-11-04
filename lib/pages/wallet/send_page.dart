@@ -1,4 +1,3 @@
-
 // lib/pages/wallet/send_page.dart
 
 import 'package:bico_certo/services/auth_service.dart';
@@ -22,6 +21,7 @@ class _SendPageState extends State<SendPage> {
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _passwordVisible = false;
 
   @override
   void dispose() {
@@ -46,7 +46,7 @@ class _SendPageState extends State<SendPage> {
     try {
       // Converte o valor do campo de texto para double
       final amount = double.parse(_amountController.text.replaceAll(',', '.'));
-      
+
       final response = await _authService.transferEth(
         password: _passwordController.text,
         toAddress: _addressController.text,
@@ -58,14 +58,15 @@ class _SendPageState extends State<SendPage> {
         // Mostra a mensagem de sucesso da API
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Transferência realizada com sucesso!'),
+            content: Text(
+              response['message'] ?? 'Transferência realizada com sucesso!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
         // Retorna para a tela da carteira após o sucesso
         Navigator.of(context).pop();
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -84,11 +85,27 @@ class _SendPageState extends State<SendPage> {
     }
   }
 
+  InputDecoration _inputDecorationPass(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Enviar Dinheiro'),
+        backgroundColor: Color.fromARGB(255, 15, 73, 131),
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Enviar Dinheiro',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -125,7 +142,9 @@ class _SendPageState extends State<SendPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.attach_money),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'O valor é obrigatório.';
@@ -137,7 +156,7 @@ class _SendPageState extends State<SendPage> {
                 },
               ),
               const SizedBox(height: 20),
-              
+
               // Campo Nota / Descrição
               TextFormField(
                 controller: _noteController,
@@ -152,21 +171,27 @@ class _SendPageState extends State<SendPage> {
               // Campo Senha
               TextFormField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Sua Senha',
-                  border: OutlineInputBorder(),
+                decoration: _inputDecorationPass('Senha').copyWith(
                   prefixIcon: Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Sua senha é obrigatória para confirmar.';
-                  }
-                  return null;
-                },
+                obscureText: !_passwordVisible,
+                validator: (value) =>
+                    value!.isEmpty ? 'A senha é obrigatória' : null,
               ),
-              const SizedBox(height: 40),
 
+              const SizedBox(height: 40),
               // Botão de Envio
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _handleSendTransfer,
