@@ -131,6 +131,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   final ProposalService _proposalService = ProposalService();
   final ChatApiService _chatApiService = ChatApiService();
   final AuthService _authService = AuthService();
+  final JobService _jobService = JobService();
 
   bool _isLoadingChat = false;
   late int _proposalCount;
@@ -138,6 +139,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   bool _isLoadingProposal = true;
   bool _isJobOwner = false;
   bool _isCheckingOwner = true;
+  bool _isProvider = false;
 
   @override
   void initState() {
@@ -145,6 +147,66 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     _proposalCount = widget.job.proposalCount;
     _checkIfJobOwner();
     _loadMyProposal();
+    _checkIfProvider();
+  }
+
+  Future<void> _checkIfProvider() async {
+    try {
+      final userWalletAddress = await _authService.getAddress();
+      if (userWalletAddress != null && widget.job.providerAddress.isNotEmpty) {
+        final providerAddress = widget.job.providerAddress.toLowerCase();
+        final userAddress = userWalletAddress.toLowerCase();
+
+        setState(() {
+          _isProvider = providerAddress == userAddress;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isProvider = false;
+      });
+    }
+  }
+
+  Future<void> _completeJob() async {
+    final password = await _showCompleteJobDialog();
+    if (password == null || password.isEmpty) return;
+
+    _showLoadingDialog();
+
+    try {
+      final result = await _jobService.completeJob(
+        jobId: widget.job.jobId,
+        password: password,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // Fechar loading
+
+      if (result['success'] == true) {
+        _showSuccessSnackBar(result['message'] ?? 'Job concluído com sucesso!');
+
+        // Aguardar um pouco e voltar indicando que houve mudança
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Erro ao concluir job');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Fechar loading
+        _showErrorSnackBar('Erro ao concluir job: $e');
+      }
+    }
+  }
+
+  Future<String?> _showCompleteJobDialog() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => const _CompleteJobDialog(),
+    );
   }
 
   Future<void> _startChatWithProvider() async {
@@ -384,6 +446,8 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     final hasActiveProposal = ProposalStatusHelpers.isActiveProposal(_myProposal);
     final isLoading = _isCheckingOwner || _isLoadingProposal;
     final isInProgress = widget.job.status != JobStatus.open;
+    final isAcceptedOrInProgress = widget.job.status == JobStatus.accepted ||
+        widget.job.status == JobStatus.inProgress;
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -400,7 +464,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_isJobOwner)
+                  if (_isJobOwner && widget.job.status == JobStatus.open)
                     _OwnerSection(
                       job: widget.job,
                       proposalCount: _proposalCount,
@@ -418,9 +482,18 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                         proposal: _myProposal!,
                         onCancel: _cancelProposal,
                       ),
+                    if (!isLoading && _isProvider && isAcceptedOrInProgress)
+                      _CompleteJobSection(
+                        onCompleteJob: _completeJob,
+                        jobStatus: widget.job.status,
+                      ),
+                    if (widget.job.status == JobStatus.completed)
+                      _ApprovalTimerCard(job: widget.job),
                   ],
-                  _BudgetSection(maxBudget: widget.job.maxBudget, job: widget.job),
-                  const SizedBox(height: AppDimensions.spacingLarge),
+                  if (!isLoading && (_isJobOwner || widget.job.status == JobStatus.open)) ...[
+                    _BudgetSection(maxBudget: widget.job.maxBudget, job: widget.job),
+                    const SizedBox(height: AppDimensions.spacingLarge),
+                  ],
                   _DescriptionSection(description: widget.job.metadata.data.description),
                   const SizedBox(height: AppDimensions.spacingLarge),
                   _InformationSection(job: widget.job),
@@ -463,12 +536,265 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.share),
-          onPressed: () {},
+      foregroundColor: Colors.white
+    );
+  }
+}
+
+class _ApprovalTimerCard extends StatelessWidget {
+  final Job job;
+
+  const _ApprovalTimerCard({required this.job});
+
+  Map<String, dynamic>? _getApprovalDeadlineInfo() {
+    try {
+      if (job.status != JobStatus.completed) return null;
+
+      final completedAtStr = job.completedAt;
+      if (completedAtStr.isEmpty) return null;
+
+      final completedAt = DateTime.parse(completedAtStr);
+      final approvalDeadline = completedAt.add(const Duration(days: 3));
+      final now = DateTime.now();
+      final timeRemaining = approvalDeadline.difference(now);
+
+      return {
+        'completedAt': completedAt,
+        'deadline': approvalDeadline,
+        'timeRemaining': timeRemaining,
+        'isExpired': timeRemaining.isNegative,
+        'hoursRemaining': timeRemaining.inHours.abs(),
+        'daysRemaining': timeRemaining.inDays.abs(),
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  String _formatTimeRemaining(Duration duration) {
+    if (duration.inDays > 0) {
+      final days = duration.inDays;
+      final hours = duration.inHours % 24;
+      return '$days ${days == 1 ? 'dia' : 'dias'} e $hours ${hours == 1 ? 'hora' : 'horas'}';
+    } else if (duration.inHours > 0) {
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes % 60;
+      return '$hours ${hours == 1 ? 'hora' : 'horas'} e $minutes min';
+    } else {
+      final minutes = duration.inMinutes;
+      return '$minutes ${minutes == 1 ? 'minuto' : 'minutos'}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final approvalInfo = _getApprovalDeadlineInfo();
+
+    if (approvalInfo == null) return const SizedBox.shrink();
+
+    final isExpired = approvalInfo['isExpired'] as bool;
+    final timeRemaining = approvalInfo['timeRemaining'] as Duration;
+    final completedAt = approvalInfo['completedAt'] as DateTime;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(
+          icon: Icons.timer,
+          title: 'Prazo de Aprovação',
         ),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isExpired
+                  ? [Colors.red[50]!, Colors.red[100]!]
+                  : [Colors.amber[50]!, Colors.orange[50]!],
+            ),
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(
+              color: isExpired ? Colors.red[300]! : Colors.orange[300]!,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isExpired ? Colors.red[100] : Colors.orange[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isExpired ? Icons.warning_amber : Icons.hourglass_bottom,
+                      color: isExpired ? Colors.red[700] : Colors.orange[700],
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isExpired
+                              ? 'Prazo de Aprovação Expirado!'
+                              : 'Aguardando Aprovação do Cliente',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isExpired ? Colors.red[900] : Colors.orange[900],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isExpired
+                              ? 'O prazo para aprovação já passou'
+                              : 'O cliente tem até 3 dias para aprovar',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isExpired ? Colors.red[700] : Colors.orange[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                height: 1,
+                color: isExpired ? Colors.red[200] : Colors.orange[200],
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 22,
+                      color: isExpired ? Colors.red[600] : Colors.orange[600],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isExpired ? 'Tempo Expirado' : 'Tempo Restante',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isExpired
+                                ? 'Expirou há ${_formatTimeRemaining(timeRemaining.abs())}'
+                                : _formatTimeRemaining(timeRemaining),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isExpired ? Colors.red[700] : Colors.orange[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Data de conclusão
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 22,
+                      color: Colors.green[600],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Trabalho Concluído em',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            DateFormatters.formatDateTime(completedAt.toIso8601String()),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (!isExpired) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Colors.blue[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Após a aprovação, o pagamento será liberado automaticamente.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue[900],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDimensions.spacingLarge),
       ],
     );
   }
@@ -666,8 +992,6 @@ class _JobHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOpen = job.status == JobStatus.open || job.status == JobStatus.created;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -685,6 +1009,7 @@ class _JobHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _CategoryIconBadge(category: job.category),
               const SizedBox(width: 16),
@@ -693,7 +1018,42 @@ class _JobHeader extends StatelessWidget {
                   title: job.metadata.data.title,
                   category: job.category,
                 ),
-              )
+              ),
+              const SizedBox(width: 12),
+              // Status do Job
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: job.status.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      job.status.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
@@ -954,15 +1314,17 @@ class _BudgetSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.green[800],
-                  fontWeight: FontWeight.w600,
+              if(!isInProgress)...[
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.green[800],
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
+              ],
               Text(
                 'R\$ ${StringFormatter.formatAmount(maxBudget)}',
                 style: TextStyle(
@@ -2360,6 +2722,223 @@ class _ProposalFormState extends State<_ProposalForm> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CompleteJobSection extends StatelessWidget {
+  final VoidCallback onCompleteJob;
+  final JobStatus jobStatus;
+
+  const _CompleteJobSection({
+    required this.onCompleteJob,
+    required this.jobStatus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canComplete = jobStatus == JobStatus.inProgress || jobStatus == JobStatus.accepted;
+
+    if (!canComplete) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(
+          icon: Icons.construction,
+          title: 'Ações do Prestador',
+        ),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green[50]!, Colors.green[100]!],
+            ),
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(color: Colors.green[300]!, width: 2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[600],
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.work,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Trabalho em Andamento',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[900],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Finalizou o serviço? Marque como concluído!',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onCompleteJob,
+                  icon: const Icon(Icons.check_circle, color: Colors.white),
+                  label: const Text('Concluir Job'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.green[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Após concluir, o cliente deverá aprovar o trabalho para você receber o pagamento.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDimensions.spacingLarge),
+      ],
+    );
+  }
+}
+
+class _CompleteJobDialog extends StatefulWidget {
+  const _CompleteJobDialog();
+
+  @override
+  State<_CompleteJobDialog> createState() => _CompleteJobDialogState();
+}
+
+class _CompleteJobDialogState extends State<_CompleteJobDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green),
+          SizedBox(width: AppDimensions.spacing),
+          Text('Concluir Job'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Você está prestes a marcar este job como concluído. '
+                'O cliente deverá aprovar o trabalho para você receber o pagamento.',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Senha da Carteira',
+              hintText: 'Digite sua senha',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+              ),
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_passwordController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Por favor, digite sua senha'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            Navigator.pop(context, _passwordController.text);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[600],
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Confirmar'),
+        ),
+      ],
     );
   }
 }

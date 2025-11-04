@@ -35,7 +35,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   String? _errorProposals;
   String? _errorJobs;
 
-  Set<String> _selectedStatuses = {'pending', 'accepted', 'rejected'};
+  Set<String> _selectedStatuses = {'pending', 'accepted'};
   double? _minProposalAmount;
   double? _maxProposalAmount;
   String _proposalSortBy = 'recent';
@@ -77,47 +77,6 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
       _loadMyProposals(),
       _loadMyJobs(),
     ]);
-  }
-
-  Future<void> _navigateToJobDetails(String jobId) async {
-    try {
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      final job = await _jobService.getJobById(jobId);
-
-      if (!mounted) return;
-
-      Navigator.pop(context);
-
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => JobDetailsPage(job: job),
-        ),
-      );
-
-      if (result == true) {
-        _loadMyProposals();
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      Navigator.pop(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao carregar detalhes do job: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   Future<void> _loadMyProposals() async {
@@ -500,11 +459,17 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
                 return ProposalCard(
                   proposal: _filteredProposals[index],
                   onUpdate: _loadMyProposals,
-                  onTap: () {
-                    final jobId = _filteredProposals[index]['job_id'];
-                    if (jobId != null) {
-                      _navigateToJobDetails(jobId.toString());
-                    }
+                  onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => JobDetailsPage(job: Job.fromJson(_filteredProposals[index]['job'])),
+                        ),
+                      );
+
+                      if (result == true) {
+                        _loadMyProposals();
+                      }
                   },
                 );
               },
@@ -1522,10 +1487,57 @@ class ProposalCard extends StatelessWidget {
     this.onUpdate,
   });
 
+  Map<String, dynamic>? _getApprovalDeadlineInfo() {
+    try {
+      final job = proposal['job'];
+      if (job == null) return null;
+
+      final jobStatus = job['status']?.toString().toLowerCase();
+      if (jobStatus != 'completed') return null;
+
+      final completedAtStr = job['completed_at']?.toString();
+      if (completedAtStr == null || completedAtStr.isEmpty) return null;
+
+      final completedAt = DateTime.parse(completedAtStr);
+      final approvalDeadline = completedAt.add(const Duration(days: 3));
+      final now = DateTime.now();
+      final timeRemaining = approvalDeadline.difference(now);
+
+      return {
+        'deadline': approvalDeadline,
+        'timeRemaining': timeRemaining,
+        'isExpired': timeRemaining.isNegative,
+        'hoursRemaining': timeRemaining.inHours.abs(),
+        'daysRemaining': timeRemaining.inDays.abs(),
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Color _getJobStatusColor(String status) {
+    final jobStatus = JobStatus.fromString(status);
+    return jobStatus.color;
+  }
+
+  String _getJobStatusText(String status) {
+    final jobStatus = JobStatus.fromString(status);
+    return jobStatus.displayName;
+  }
+
+  bool _isActiveProposal(String status) {
+    final statusLower = status.toLowerCase();
+    return statusLower == 'pending' || statusLower == 'accepted';
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final status = proposal['status'] ?? 'pending';
+    final job = proposal['job'];
+    final isActive = _isActiveProposal(status);
+    final jobStatus = job?['status']?.toString() ?? 'none';
+    final approvalInfo = isActive ? _getApprovalDeadlineInfo() : null;
 
     return Card(
       elevation: 2,
@@ -1541,15 +1553,16 @@ class ProposalCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Cabeçalho com título e status da proposta
               Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (proposal['job'] != null) ...[
+                        if (job != null) ...[
                           Text(
-                            proposal['job']['metadata']['data']['title'].toString() ?? 'N/A',
+                            job['metadata']?['data']?['title']?.toString() ?? 'N/A',
                             style: TextStyle(
                               fontSize: screenWidth * 0.042,
                               fontWeight: FontWeight.bold,
@@ -1559,7 +1572,7 @@ class ProposalCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            proposal['job']['service_type'],
+                            job['service_type'] ?? '',
                             style: TextStyle(
                               fontSize: screenWidth * 0.028,
                               color: Colors.grey[600],
@@ -1576,6 +1589,107 @@ class ProposalCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (isActive && jobStatus != 'none') ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getJobStatusColor(jobStatus).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _getJobStatusColor(jobStatus).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.work_outline,
+                        size: 14,
+                        color: _getJobStatusColor(jobStatus),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Job: ${_getJobStatusText(jobStatus)}',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          fontWeight: FontWeight.w600,
+                          color: _getJobStatusColor(jobStatus),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              if (approvalInfo != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: approvalInfo['isExpired']
+                          ? [Colors.red[50]!, Colors.red[100]!]
+                          : [Colors.amber[50]!, Colors.orange[50]!],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: approvalInfo['isExpired'] ? Colors.red[300]! : Colors.orange[300]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            approvalInfo['isExpired'] ? Icons.warning : Icons.timer,
+                            size: 16,
+                            color: approvalInfo['isExpired'] ? Colors.red[700] : Colors.orange[700],
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              approvalInfo['isExpired']
+                                  ? 'Prazo de aprovação expirado!'
+                                  : 'Aguardando aprovação do cliente',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.032,
+                                fontWeight: FontWeight.bold,
+                                color: approvalInfo['isExpired'] ? Colors.red[900] : Colors.orange[900],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: approvalInfo['isExpired'] ? Colors.red[600] : Colors.orange[600],
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            approvalInfo['isExpired']
+                                ? 'Expirou há ${approvalInfo['hoursRemaining']} horas'
+                                : _formatTimeRemaining(approvalInfo['timeRemaining']),
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.03,
+                              color: approvalInfo['isExpired'] ? Colors.red[700] : Colors.orange[700],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 12),
               Container(
                 height: 1,
@@ -1584,7 +1698,6 @@ class ProposalCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const SizedBox(width: 4),
                   Text(
                     'R\$ ${StringFormatter.formatAmount(proposal['amount'])}',
                     style: TextStyle(
@@ -1610,6 +1723,8 @@ class ProposalCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+
+              // Data de envio
               Row(
                 children: [
                   Icon(
@@ -1632,6 +1747,21 @@ class ProposalCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatTimeRemaining(Duration duration) {
+    if (duration.inDays > 0) {
+      final days = duration.inDays;
+      final hours = duration.inHours % 24;
+      return '$days ${days == 1 ? 'dia' : 'dias'} e $hours ${hours == 1 ? 'hora' : 'horas'}';
+    } else if (duration.inHours > 0) {
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes % 60;
+      return '$hours ${hours == 1 ? 'hora' : 'horas'} e $minutes min';
+    } else {
+      final minutes = duration.inMinutes;
+      return '$minutes ${minutes == 1 ? 'minuto' : 'minutos'}';
+    }
   }
 
   String _formatDate(dynamic dateString) {

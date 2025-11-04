@@ -128,7 +128,7 @@ class Job {
       jobId: json['id']?.toString() ?? '',
       client: json['client']?.toString() ?? '',
       providerId: json['accepted_proposal']?['provider']['user_id'].toString() ?? '',
-      providerAddress: json['accepted_proposal']?['provider']['address'].toString() ?? '',
+      providerAddress: json['provider'].toString() ?? '',
       providerName: json['accepted_proposal']?['provider']['name'].toString() ?? '',
       maxBudget: _parseDouble(json['max_budget']),
       deadline: json['deadline']?.toString() ?? '',

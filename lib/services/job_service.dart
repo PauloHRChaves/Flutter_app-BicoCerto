@@ -144,6 +144,42 @@ class JobService {
     }
   }
 
+  Future<Map<String, dynamic>> completeJob({
+    required String jobId,
+    required String password,
+  }) async {
+    try {
+
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/jobs/complete'),
+        headers: headers,
+        body: json.encode({
+          'job_id': jobId,
+          'password': password,
+        }),
+      );
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Job concluído com sucesso!',
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erro ao concluir job',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Erro ao concluir job: $e',
+      };
+    }
+  }
+
   Future<Job> getJobById(String jobId) async {
     try {
       final headers = await _getHeaders();
