@@ -7,6 +7,7 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:intl/intl.dart';
 
 import '../../utils/string_formatter.dart';
+import '../../widgets/location_navigation_widget.dart';
 import '../../widgets/status_badge.dart';
 import 'job_proposals_page.dart';
 
@@ -1439,10 +1440,8 @@ class _InformationSection extends StatelessWidget {
       children: [
         const _SectionTitle(icon: Icons.info_outline, title: 'Informações'),
         const SizedBox(height: AppDimensions.spacing),
-        _InfoRow(
-          icon: Icons.location_on,
-          label: 'Localização',
-          value: job.metadata.data.location,
+        LocationNavigationWidget(
+          locationString: job.metadata.data.location,
           color: Colors.red,
         ),
         const SizedBox(height: AppDimensions.spacing),
