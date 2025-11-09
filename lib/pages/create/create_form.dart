@@ -188,13 +188,13 @@ class _CreateOrderPageState extends State<CreateJobPage> {
         description: _descriptionJobController.text,
         category: _selectedCategory!,
         location: _locationJobController.text,
-        budget: _treatedBugdet(_budgetController.text), 
+        images: _jobPhotos,
         deadline: _selectedDateFormated,
+        budget: _treatedBugdet(_budgetController.text), 
         password: password, 
         
       );
       
-      await authService.uploadJobPhotos(_jobPhotos);
     //------------------------CAMPO DE TESTES DE ENVIO -----------------------------
     /*
       final data = {
@@ -273,6 +273,8 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     );
   }
   
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

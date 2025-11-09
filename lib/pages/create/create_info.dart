@@ -1,7 +1,6 @@
 import 'package:bico_certo/services/auth_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
-import 'package:flutter_map/flutter_map.dart';
 
 class OrderInfoPage extends StatelessWidget {
   // A função onTap será chamada ao pressionar o botão principal.
