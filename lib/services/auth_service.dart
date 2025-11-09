@@ -327,7 +327,7 @@ class AuthService {
   // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
   Future<Map<String, dynamic>> getUserProfile() async {
     final responseData = await _secureGet('auth/me');
-    return responseData['data'] as Map<String, dynamic>? ?? {}; 
+    return responseData['user_data'] as Map<String, dynamic>? ?? {}; 
   }
   
   // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
