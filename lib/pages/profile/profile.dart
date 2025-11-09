@@ -213,8 +213,6 @@ class _SetProfileState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     // ⚠️ ->  Variaveis
-    final double totalEarnings = 1850.00;
-    final double percentageChange = 12.0;
     final String nome = '1234_1234_1234_1234_1234_1234_1234_1';
     final String id = '123456789';
     final String cidade = 'Salvador';
@@ -420,8 +418,6 @@ class _SetProfileState extends State<ProfilePage> {
                     icon: Icons.account_balance_wallet_outlined,
                     label: "Carteira",
                     onTap: _checkAndNavigateToWallet),
-                
-                // --- 🔽 SEÇÃO ATUALIZADA 🔽 ---
                 _buildActionButton(
                   context: context,
                   icon: Icons.dashboard_outlined, // Ícone de Dashboard
@@ -450,76 +446,9 @@ class _SetProfileState extends State<ProfilePage> {
                     // TODO: Navegar para a página de Jobs (ex: JobsListPage)
                   },
                 ),
-                // --- 🔼 SEÇÃO ATUALIZADA 🔼 ---
               ],
             ),
           ),
-
-          SizedBox(height: screenHeight * 0.01),
-
-          // --- Ganhos Totais da Semana ---
-          InkWell(
-            onTap: () {
-              Navigator.of(context).pushNamed(AppRoutes.dashboardPage);
-            },
-            borderRadius: BorderRadius.circular(12.0),
-            child: Card(
-              color: const Color.fromARGB(255, 235, 250, 255),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(25.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        const Text(
-                          'Ganhos Totais da Semana',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.trending_up,
-                          color: Color(0xFF4CAF50),
-                          size: 28,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Valor Principal
-                    Text(
-                      'R\$ ${totalEarnings.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1a1a1a),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-
-                    // Detalhe de Comparação
-                    Text(
-                      '+${percentageChange.toStringAsFixed(0)}% em relação à semana anterior',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.01),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
