@@ -1982,13 +1982,6 @@ class _ProviderSectionState extends State<_ProviderSection> {
                                     color: _getReputationColor(_reputation!['reputationScore']),
                                   ),
                                 ),
-                                Text(
-                                  '(${_reputation!['reputationScore']} pts)',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
                               ],
                             ),
                           ),

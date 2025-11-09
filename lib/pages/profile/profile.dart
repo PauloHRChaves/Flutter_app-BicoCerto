@@ -1,5 +1,6 @@
 // ⚠️ ESTA PAGINA DEVE SER VISIVEL APENAS PELO DONO DA MESMA ⚠️
 
+import 'package:bico_certo/pages/dashboard/client_dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 import 'package:bico_certo/routes.dart';
@@ -7,6 +8,8 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/services/auth_guard.dart';
 import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/pages/wallet/create_wallet_page.dart';
+
+import '../dashboard/provider_dashboard_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -418,10 +421,20 @@ class _SetProfileState extends State<ProfilePage> {
                       context: context,
                       icon: Icons.account_balance_wallet_outlined,
                       label: "Carteira",
-                      onTap: _checkAndNavigateToWallet,
-                    ),
+                      onTap:() => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProviderDashboardPage(),
+                        ),
+                      )),
                     //⚠️ Aplicar Logica
-                    _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY"),
+                    _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY",
+                        onTap:() => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ClientDashboardPage(),
+                        ),
+                      )),
                     _buildActionButton(context: context, icon: Icons.settings_outlined, label: "YYY"),
                     _buildActionButton(context: context, icon: Icons.headset_mic_outlined, label: "YYY"),
                   ],
