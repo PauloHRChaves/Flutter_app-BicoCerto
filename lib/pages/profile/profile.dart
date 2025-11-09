@@ -421,12 +421,7 @@ class _SetProfileState extends State<ProfilePage> {
                       context: context,
                       icon: Icons.account_balance_wallet_outlined,
                       label: "Carteira",
-                      onTap:() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProviderDashboardPage(),
-                        ),
-                      )),
+                        onTap: _checkAndNavigateToWallet),
                     //⚠️ Aplicar Logica
                     _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY",
                         onTap:() => Navigator.push(
@@ -435,7 +430,13 @@ class _SetProfileState extends State<ProfilePage> {
                           builder: (context) => const ClientDashboardPage(),
                         ),
                       )),
-                    _buildActionButton(context: context, icon: Icons.settings_outlined, label: "YYY"),
+                    _buildActionButton(context: context, icon: Icons.settings_outlined, label: "YYY",
+                        onTap:() => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProviderDashboardPage(),
+                          ),
+                        )),
                     _buildActionButton(context: context, icon: Icons.headset_mic_outlined, label: "YYY"),
                   ],
                 ),
