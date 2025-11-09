@@ -21,14 +21,43 @@ class ProfilePage extends StatefulWidget {
 class _SetProfileState extends State<ProfilePage> {
   //Lógica de navegação e checagem da Wallet
   final AuthService _authService = AuthService();
+
+  // GET ME
+  String _fullName = '...'; 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(); 
+  }
+
+  void _loadUserData() async {
+    try {
+      final userData = await _authService.getUserProfile();
+
+      if (userData.containsKey('full_name') && userData['full_name'] != null) {
+        setState(() {
+          _fullName = userData['full_name'];
+        });
+      } else {
+         setState(() {
+          _fullName = 'Usuário'; 
+        });
+      }
+    } catch (e) {
+      
+      print('Erro ao buscar dados do usuário: $e');
+      setState(() {
+        _fullName = 'Erro ao carregar';
+      });
+    }
+  }
+
+  //Lógica de navegação e checagem da Wallet
   void _checkAndNavigateToWallet() async {
     final details = await _authService.getWalletDetails();
 
     final bool walletExists =
         !(details.containsKey('has_wallet') && details['has_wallet'] == false);
-    /* caso A: A carteira NÃO existe: walletExists = !true -> condição de falha é VERDADEIRA
-       caso B: A carteira Existe:  walletExists = !false -> condição de falha é FALSA
-    */
 
     if (mounted) {
       if (walletExists) {
@@ -47,8 +76,6 @@ class _SetProfileState extends State<ProfilePage> {
       }
     }
   }
-
-  // Funções utilitárias para construir os elementos do design
 
   // jobdone
   Widget _buildStatCard({
@@ -212,19 +239,19 @@ class _SetProfileState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // ⚠️ ->  Variaveis
-    final String nome = '1234_1234_1234_1234_1234_1234_1234_1';
+    
+    // os dados tem que ser da api não estaticos
     final String id = '123456789';
-    final String cidade = 'Salvador';
-    final String estado = 'BA';
+    final String cidade = 'CIDADE';
+    final String estado = 'ESTADO';
     final String description =
-        '123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_';
+        'descrição';
 
     final int jobdone = 0;
     final double estrelas = 2;
 
     final img =
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR6MNssSL4Z1V7W4tY8H8BkItscxMEegw0ew&s";
+        "https://img.freepik.com/vetores-premium/uma-silhueta-azul-do-rosto-de-uma-pessoa-contra-um-fundo-branco_754208-70.jpg?w=2000";
 
     // Responsividade
     final screenHeight = MediaQuery.of(context).size.height;
@@ -300,9 +327,9 @@ class _SetProfileState extends State<ProfilePage> {
                 ),
                 SizedBox(height: screenHeight * 0.01),
 
-                // ⚠️ -> Nome de usuario
+                // --- 🔽 NOME DE USUÁRIO ATUALIZADO 🔽 ---
                 Text(
-                  nome,
+                  _fullName, // Mostra "...", depois o nome, ou um erro.
                   style: TextStyle(
                     fontSize: fonttitle,
                     fontWeight: FontWeight.bold,
