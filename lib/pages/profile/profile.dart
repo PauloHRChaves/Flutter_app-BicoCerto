@@ -22,21 +22,24 @@ class _SetProfileState extends State<ProfilePage> {
   //Lógica de navegação e checagem da Wallet
   final AuthService _authService = AuthService();
   void _checkAndNavigateToWallet() async {
-    final details = await _authService.getWalletDetails(); 
+    final details = await _authService.getWalletDetails();
 
-    final bool walletExists = !(details.containsKey('has_wallet') && details['has_wallet'] == false);
+    final bool walletExists =
+        !(details.containsKey('has_wallet') && details['has_wallet'] == false);
     /* caso A: A carteira NÃO existe: walletExists = !true -> condição de falha é VERDADEIRA
        caso B: A carteira Existe:  walletExists = !false -> condição de falha é FALSA
     */
-    
+
     if (mounted) {
       if (walletExists) {
         // Carteira existe ou os detalhes vieram
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const WalletPage()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (context) => const WalletPage()));
       } else {
         // Carteira não existe (o retorno foi {'has_wallet': false})
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Carteira não encontrada. Por favor, crie uma.')),
+          const SnackBar(
+              content: Text('Carteira não encontrada. Por favor, crie uma.')),
         );
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const CreateWalletPage()),
@@ -55,7 +58,7 @@ class _SetProfileState extends State<ProfilePage> {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final double minimalfont = screenWidth * 0.034;
-    
+
     return Expanded(
       child: Container(
         height: 110,
@@ -67,7 +70,6 @@ class _SetProfileState extends State<ProfilePage> {
             BoxShadow(color: Colors.grey, spreadRadius: 1, blurRadius: 3),
           ],
         ),
-
         child: Column(
           children: [
             Text(
@@ -223,7 +225,8 @@ class _SetProfileState extends State<ProfilePage> {
     final int jobdone = 0;
     final double estrelas = 2;
 
-    final img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR6MNssSL4Z1V7W4tY8H8BkItscxMEegw0ew&s";
+    final img =
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR6MNssSL4Z1V7W4tY8H8BkItscxMEegw0ew&s";
 
     // Responsividade
     final screenHeight = MediaQuery.of(context).size.height;
@@ -240,307 +243,314 @@ class _SetProfileState extends State<ProfilePage> {
 
     // FIX SEGURANÇA: AuthGuard envolve todo o conteúdo do Scaffold
     return AuthGuard(
-      child: Scaffold(
-        backgroundColor: lightBackground,
-        appBar: AppBar(
-          backgroundColor: Color.fromARGB(255, 15, 73, 131),
-          elevation: 1,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: const Text(
-            "Meu Perfil",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(
-                Icons.more_vert,
-                color: Colors.white,
-              ),
-
-              // ⚠️ LOGICA NÃO APLICADA
-              onPressed: () {},
-            ),
-          ],
+        child: Scaffold(
+      backgroundColor: lightBackground,
+      appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 15, 73, 131),
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios,
+              color: Color.fromARGB(255, 255, 255, 255)),
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        title: const Text(
+          "Meu Perfil",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.more_vert,
+              color: Colors.white,
+            ),
 
-        body: ListView(
-          padding: const EdgeInsets.only(bottom: 10),
-          children: [
-            SizedBox(height: screenHeight * 0.01),
+            // ⚠️ LOGICA NÃO APLICADA
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 10),
+        children: [
+          SizedBox(height: screenHeight * 0.01),
 
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ⚠️ IMAGEM ENVIADA PELO USUÁRIO 
-                  Container(
-                    width: avatarSize,
-                    height: avatarSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: primaryBlue, width: 3),
-                      color: Colors.black,
-
-                      image: DecorationImage(
-                        image: NetworkImage(
-                          img,
-                        ),
-                        fit: BoxFit.cover, 
-                        alignment: Alignment.center, 
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ⚠️ IMAGEM ENVIADA PELO USUÁRIO
+                Container(
+                  width: avatarSize,
+                  height: avatarSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: primaryBlue, width: 3),
+                    color: Colors.black,
+                    image: DecorationImage(
+                      image: NetworkImage(
+                        img,
                       ),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.01),
+                ),
+                SizedBox(height: screenHeight * 0.01),
 
-                  // ⚠️ -> Nome de usuario
-                  Text(
-                    nome,
-                    style: TextStyle(
-                      fontSize: fonttitle,
-                      fontWeight: FontWeight.bold,
-                      color: darkText,
+                // ⚠️ -> Nome de usuario
+                Text(
+                  nome,
+                  style: TextStyle(
+                    fontSize: fonttitle,
+                    fontWeight: FontWeight.bold,
+                    color: darkText,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.01),
+
+                // ⚠️ ->  id
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "ID: ",
+                      style: TextStyle(fontSize: font, color: Colors.grey),
                     ),
-                  ),
-                  SizedBox(height: screenHeight * 0.01),
-
-                  // ⚠️ ->  id
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "ID: ",
-                        style: TextStyle(fontSize: font, color: Colors.grey),
-                      ),
-                      Text(
-                        id,
-                        style: TextStyle(color: Colors.grey, fontSize: font),
-                      ),
-                    ],
-                  ),
-
-                  // ⚠️ -> Cidade + Estado
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        cidade,
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: font,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-
-                      Text(
-                        ' - ',
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: font,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-
-                      Text(
-                        estado,
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: font,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: screenHeight * 0.01),
-
-                  // Cartão de Descrição
-                  Container(
-                    padding: EdgeInsets.all(15),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: lightBackground,
-                      borderRadius: BorderRadius.circular(10),
+                    Text(
+                      id,
+                      style: TextStyle(color: Colors.grey, fontSize: font),
                     ),
+                  ],
+                ),
 
-                    // ⚠️ -> Descrição
-                    child: Text(
-                      description,
-                      textAlign: TextAlign.start,
+                // ⚠️ -> Cidade + Estado
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      cidade,
                       style: TextStyle(
-                        color: darkText,
+                        color: Colors.black54,
+                        fontSize: font,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    Text(
+                      ' - ',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: font,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      estado,
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: font,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: screenHeight * 0.01),
+
+                // Cartão de Descrição
+                Container(
+                  padding: EdgeInsets.all(15),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: lightBackground,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ],
-              ),
+
+                  // ⚠️ -> Descrição
+                  child: Text(
+                    description,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: darkText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: screenHeight * 0.005),
+          ),
+          SizedBox(height: screenHeight * 0.005),
 
-            // --- Seção de Estatísticas (Trabalhos Concluídos e Avaliações) ---
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  _buildStatCard(
-                    title: "Trabalhos Concluídos",
-                    // ⚠️ ->  Job Done
-                    value: jobdone,
-                    color: primaryBlue,
-                  ),
-                  const SizedBox(width: 10),
-
-                  _buildStarCard(
-                    title: "Média de Avaliações",
-                    // ⚠️ ->  Estrelas
-                    value: estrelas,
-                    color: Colors.amber,
-                    isRating: true,
-                  ),
-                ],
-              ),
+          // --- Seção de Estatísticas (Trabalhos Concluídos e Avaliações) ---
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                _buildStatCard(
+                  title: "Trabalhos Concluídos",
+                  // ⚠️ ->  Job Done
+                  value: jobdone,
+                  color: primaryBlue,
+                ),
+                const SizedBox(width: 10),
+                _buildStarCard(
+                  title: "Média de Avaliações",
+                  // ⚠️ ->  Estrelas
+                  value: estrelas,
+                  color: Colors.amber,
+                  isRating: true,
+                ),
+              ],
             ),
-            SizedBox(height: screenHeight * 0.005),
+          ),
+          SizedBox(height: screenHeight * 0.005),
 
-            // --- Barra de Navegação de Ícones (Funcionalidades) ---
-            Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildActionButton(
-                      context: context,
-                      icon: Icons.account_balance_wallet_outlined,
-                      label: "Carteira",
-                        onTap: _checkAndNavigateToWallet),
-                    //⚠️ Aplicar Logica
-                    _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY",
-                        onTap:() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ClientDashboardPage(),
-                        ),
-                      )),
-                    _buildActionButton(context: context, icon: Icons.settings_outlined, label: "YYY",
-                        onTap:() => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ProviderDashboardPage(),
+          // --- Barra de Navegação de Ícones (Funcionalidades) ---
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildActionButton(
+                    context: context,
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: "Carteira",
+                    onTap: _checkAndNavigateToWallet),
+                
+                // --- 🔽 SEÇÃO ATUALIZADA 🔽 ---
+                _buildActionButton(
+                  context: context,
+                  icon: Icons.dashboard_outlined, // Ícone de Dashboard
+                  label: "Dashboard",
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const ClientDashboardPage(), // Mantido, pois parece ser a tela de Dashboard
+                    ),
+                  ),
+                ),
+                _buildActionButton(
+                  context: context,
+                  icon: Icons.settings_outlined, // Ícone de Engrenagem
+                  label: "Configurações",
+                  onTap: () {
+                    // TODO: Navegar para a página de Configurações
+                  },
+                ),
+                _buildActionButton(
+                  context: context,
+                  icon: Icons.work_outline, // Ícone de Jobs (Maleta)
+                  label: "Jobs",
+                  onTap: () {
+                    // TODO: Navegar para a página de Jobs (ex: JobsListPage)
+                  },
+                ),
+                // --- 🔼 SEÇÃO ATUALIZADA 🔼 ---
+              ],
+            ),
+          ),
+
+          SizedBox(height: screenHeight * 0.01),
+
+          // --- Ganhos Totais da Semana ---
+          InkWell(
+            onTap: () {
+              Navigator.of(context).pushNamed(AppRoutes.dashboardPage);
+            },
+            borderRadius: BorderRadius.circular(12.0),
+            child: Card(
+              color: const Color.fromARGB(255, 235, 250, 255),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        const Text(
+                          'Ganhos Totais da Semana',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF333333),
                           ),
-                        )),
-                    _buildActionButton(context: context, icon: Icons.headset_mic_outlined, label: "YYY"),
+                        ),
+                        const Icon(
+                          Icons.trending_up,
+                          color: Color(0xFF4CAF50),
+                          size: 28,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Valor Principal
+                    Text(
+                      'R\$ ${totalEarnings.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1a1a1a),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+
+                    // Detalhe de Comparação
+                    Text(
+                      '+${percentageChange.toStringAsFixed(0)}% em relação à semana anterior',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF4CAF50),
+                      ),
+                    ),
                   ],
                 ),
               ),
-
-            SizedBox(height: screenHeight * 0.01),
-
-            // --- Ganhos Totais da Semana ---
-            InkWell(
-              onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.dashboardPage);
-              },
-              borderRadius: BorderRadius.circular(12.0),
-              child: Card(
-                color: const Color.fromARGB(255, 235, 250, 255),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-
-                child: Padding(
-                  padding: const EdgeInsets.all(25.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          const Text(
-                            'Ganhos Totais da Semana',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF333333),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.trending_up,
-                            color: Color(0xFF4CAF50),
-                            size: 28,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Valor Principal
-                      Text(
-                        'R\$ ${totalEarnings.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1a1a1a),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-
-                      // Detalhe de Comparação
-                      Text(
-                        '+${percentageChange.toStringAsFixed(0)}% em relação à semana anterior',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF4CAF50),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
-            SizedBox(height: screenHeight * 0.01),
-          ],
-        ),
-
-        bottomNavigationBar: CustomBottomNavBar(
-          currentIndex: 3,
-          onTap: (index) {
-            if (index == 0) {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.sessionCheck,
-                (route) => route.isFirst,
-              );
-            } else if (index == 1) {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.ordersPage,
-                (route) => route.isFirst,
-              );
-            } else if (index == 2) {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.chatRoomsPage,
-                    (route) => route.isFirst,
-              );
-            } else if (index == 3) {
-              /*
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
-                (route) => route.isFirst,
-              );*/
-            }
-          },
-        ),
-      )
-    );
+          ),
+          SizedBox(height: screenHeight * 0.01),
+        ],
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 3,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.sessionCheck,
+              (route) => route.isFirst,
+            );
+          } else if (index == 1) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.ordersPage,
+              (route) => route.isFirst,
+            );
+          } else if (index == 2) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.chatRoomsPage,
+              (route) => route.isFirst,
+            );
+          } else if (index == 3) {
+            /*
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
+              (route) => route.isFirst,
+            );*/
+          }
+        },
+      ),
+    ));
   }
 }
