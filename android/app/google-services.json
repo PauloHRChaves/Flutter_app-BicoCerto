@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "970395598828",
+    "project_id": "bico-certo-dbcc3",
+    "storage_bucket": "bico-certo-dbcc3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:970395598828:android:59685128c3351bbaf18ac9",
+        "android_client_info": {
+          "package_name": "com.br.bicocerto.app.app_bicocerto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHYS1XNMDY4Ofr_EJk9ipf3e-4OZOvnrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
