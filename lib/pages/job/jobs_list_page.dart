@@ -4,6 +4,7 @@ import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/services/job_service.dart';
 import 'package:bico_certo/pages/job/job_details_page.dart';
 
+import '../../services/location_service.dart';
 import '../../utils/string_formatter.dart';
 
 class JobsListPage extends StatefulWidget {
@@ -22,6 +23,7 @@ class JobsListPage extends StatefulWidget {
 
 class _JobsListPageState extends State<JobsListPage> {
   final JobService _jobService = JobService();
+  final LocationService _locationService = LocationService();
   final TextEditingController _searchController = TextEditingController();
 
   List<Job> _jobs = [];
@@ -30,6 +32,8 @@ class _JobsListPageState extends State<JobsListPage> {
   String? _error;
   String? _userWalletAddress;
   final AuthService _authService = AuthService();
+
+  final Map<String, String> _locationCache = {};
 
   String? _currentSearchTerm;
   String? _selectedCategory;
@@ -71,6 +75,29 @@ class _JobsListPageState extends State<JobsListPage> {
     super.dispose();
   }
 
+  Future<String> _resolveLocation(String locationString) async {
+    try {
+      if (locationString.contains('|')) {
+        final parts = locationString.split('|');
+        if (parts.length == 2) {
+          final lat = double.tryParse(parts[0].trim());
+          final lng = double.tryParse(parts[1].trim());
+
+          if (lat != null && lng != null) {
+            final locationName = await _locationService.reverseGeocode(lat, lng);
+            return locationName?.shortAddress ??
+                locationName?.displayName ?? 'Localização no mapa';
+          }
+        }
+      }
+
+      return locationString;
+    } catch (e) {
+      print('Erro ao resolver localização: $e');
+      return 'Localização no mapa';
+    }
+  }
+
   Future<void> _loadJobs() async {
     setState(() {
       _isLoading = true;
@@ -84,6 +111,12 @@ class _JobsListPageState extends State<JobsListPage> {
         category: apiCategory,
         searchTerm: _currentSearchTerm,
       );
+
+      for (final job in jobs) {
+        final resolvedLocation = await _resolveLocation(job.metadata.data.location);
+        _locationCache[job.jobId] = resolvedLocation;
+      }
+
       setState(() {
         _jobs = jobs;
         _applyFilters();
@@ -403,7 +436,7 @@ class _JobsListPageState extends State<JobsListPage> {
                 padding: const EdgeInsets.all(16),
                 itemCount: _filteredJobs.length,
                 itemBuilder: (context, index) {
-                  return JobCard(job: _filteredJobs[index], onUpdate: _loadJobs);
+                  return JobCard(job: _filteredJobs[index],locationCache: _locationCache, onUpdate: _loadJobs);
                 },
               ),
             ),
@@ -820,9 +853,10 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 
 class JobCard extends StatelessWidget {
   final Job job;
+  final Map<String, String> locationCache;
   final VoidCallback? onUpdate;
 
-  const JobCard({super.key, required this.job, this.onUpdate});
+  const JobCard({super.key, required this.job,required this.locationCache, this.onUpdate});
 
   @override
   Widget build(BuildContext context) {
@@ -905,7 +939,7 @@ class JobCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      job.metadata.data.location,
+                      locationCache[job.jobId] ?? job.metadata.data.location,
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         color: Colors.grey[600],
