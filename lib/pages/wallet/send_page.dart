@@ -45,7 +45,7 @@ class _SendPageState extends State<SendPage> {
 
     try {
       // Converte o valor do campo de texto para double
-      final amount = double.parse(_amountController.text.replaceAll(',', '.'));
+      final amount = double.parse((_amountController.text.replaceAll(".", "")).replaceAll(",", "."));
 
       final response = await _authService.transferEth(
         password: _passwordController.text,
@@ -150,7 +150,7 @@ class _SendPageState extends State<SendPage> {
                   if (value == null || value.isEmpty) {
                     return 'O valor é obrigatório.';
                   }
-                  if (double.tryParse(value.replaceAll(',', '.')) == null) {
+                  if (double.tryParse((value.replaceAll(".", "")).replaceAll(",", ".")) == null) {
                     return 'Por favor, insira um número válido.';
                   }
                   return null;

@@ -1,9 +1,12 @@
 // lib/services/auth_service.dart
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import necessário
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'chat_api_service.dart'; // Import necessário
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
@@ -204,6 +207,26 @@ class AuthService {
     }
   }
 
+  Future<void> _updateFcmTokenAfterLogin() async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        final token = await getToken();
+        if (token != null) {
+          await http.post(
+            Uri.parse('$baseUrl/chat/fcm-token/update?token=$fcmToken'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          );
+        }
+      }
+    } catch (e) {
+      // Não lançar erro para não bloquear o login
+    }
+  }
+
   // Lógica de Login (Com checagem robusta de Token)
   Future<Map<String, dynamic>> login({
     required String email,
@@ -214,6 +237,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/login'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: jsonEncode(<String, dynamic>{
         'email': email,
@@ -221,31 +245,28 @@ class AuthService {
         'device_info': deviceInfo,
       }),
     );
-    
-    // Processamento da Resposta
+
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
       final data = responseBody['data'];
-      
+
       if (data != null && data['access_token'] is String) {
         final String accessToken = data['access_token'];
-        
-        // Salvamento do Token
+
         await saveToken(accessToken);
-        
-        // Salvamento de UserId e Address (Se existirem)
+
         final String? userId = data['user']?['id'];
         final String? address = data['user']?['address'];
         if (userId != null) await saveUserId(userId);
         if (address != null) await saveAddress(address);
-        
-        return responseBody; // Sucesso, retorna os dados
+
+        await _updateFcmTokenAfterLogin();
+
+        return responseBody;
       } else {
         throw Exception('Resposta de login inválida. Token não encontrado na resposta.');
       }
-
     } else {
-      // Tratamento de Erro (Status code != 200)
       Map<String, dynamic> jsonResponse = json.decode(response.body);
       throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no login.');
     }
@@ -262,29 +283,41 @@ class AuthService {
     };
   }
 
-  // Logout
   Future<void> logout() async {
     final token = await getToken();
-    
+
+    if (token != null) {
+      try {
+        final chatService = ChatApiService();
+        await chatService.removeFcmToken();
+      } catch (e) {
+        // Erro
+      }
+
+      try {
+        await http.post(
+          Uri.parse('$baseUrl/auth/logout'),
+          headers: <String, String>{
+            'Authorization': 'Bearer $token',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        );
+      } catch (e) {
+        // Erro
+      }
+    }
+
     await deleteToken();
     await deleteUserId();
     await deleteAddress();
-    
-    if (token != null) {
-      await http.post(
-        Uri.parse('$baseUrl/auth/logout'),
-        headers: <String, String>{
-          'Authorization': 'Bearer $token',
-        },
-      );
-    }
   }
+
 
   // ESQUECEU A SENHA
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password/forgot'),
-      headers:<String, String>{'Content-Type': 'application/json; charset=UTF-8'},
+      headers:<String, String>{'Content-Type': 'application/json; charset=UTF-8','ngrok-skip-browser-warning': 'true'},
       body: jsonEncode(<String, String>{'email': email}),
     );
 
@@ -307,6 +340,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/password/reset'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true'
       },
       body: jsonEncode(<String, String>{
         'reset_token': resetToken,
