@@ -84,43 +84,43 @@ class _WalletPageState extends State<WalletPage> {
     try {
       _websocketChannel = await _chatApiService.connectNotificationsWebSocket();
 
-      print('🔌 WebSocket conectado para Carteira');
-
-      setState(() {
-        _isWebSocketConnected = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = true;
+        });
+      }
 
       _websocketChannel!.stream.listen(
             (message) {
-          print('📨 Mensagem recebida do WebSocket na Carteira');
           _handleWebSocketMessage(message);
         },
         onError: (error) {
-          print('❌ Erro no WebSocket: $error');
-          setState(() {
-            _isWebSocketConnected = false;
-          });
+          if (mounted) {
+            setState(() {
+              _isWebSocketConnected = false;
+            });
+          }
         },
         onDone: () {
-          print('🔌 WebSocket desconectado');
-          setState(() {
-            _isWebSocketConnected = false;
-          });
+          if (mounted) {
+            setState(() {
+              _isWebSocketConnected = false;
+            });
+          }
 
-          // Reconectar após 3 segundos
           Future.delayed(const Duration(seconds: 3), () {
             if (mounted) {
-              print('🔄 Tentando reconectar WebSocket...');
               _connectWebSocket();
             }
           });
         },
       );
     } catch (e) {
-      print('❌ Erro ao conectar WebSocket: $e');
-      setState(() {
-        _isWebSocketConnected = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = false;
+        });
+      }
     }
   }
 
@@ -129,17 +129,10 @@ class _WalletPageState extends State<WalletPage> {
       final data = jsonDecode(message);
       final type = data['type'];
 
-      print('📩 Tipo de mensagem WebSocket: $type');
-
       if (type == 'wallet_update') {
         final updateData = data['data'];
         final transactionType = updateData['transaction_type'];
-        final amount = updateData['amount'];
         final txMessage = updateData['message'];
-
-        print('💰 Atualização de carteira recebida:');
-        print('   Tipo: $transactionType');
-        print('   Valor: $amount');
 
         // Mostrar SnackBar
         if (mounted) {
@@ -397,6 +390,26 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
+  String _formatCurrency(double value) {
+    final parts = value.toStringAsFixed(2).split('.');
+    final intPart = parts[0];
+    final decPart = parts[1];
+
+    String formatted = '';
+    int count = 0;
+
+    for (int i = intPart.length - 1; i >= 0; i--) {
+      if (count == 3) {
+        formatted = '.$formatted';
+        count = 0;
+      }
+      formatted = intPart[i] + formatted;
+      count++;
+    }
+
+    return '$formatted,$decPart';
+  }
+
   void _updateStateWithData(
       Map<String, dynamic> balanceData,
       List<Map<String, dynamic>> transactionData,
@@ -411,7 +424,7 @@ class _WalletPageState extends State<WalletPage> {
     final fullAddress = balanceData['address'] as String? ?? "0x000...000";
 
     setState(() {
-      _balance = "R\$ ${balanceInETH.toStringAsFixed(2).replaceAll('.', ',')} BRL";
+      _balance = "R\$ ${_formatCurrency(balanceInETH)} BRL";
 
       _fullAddress = fullAddress;
       _displayAddress = fullAddress.length > 10
@@ -537,28 +550,10 @@ class _WalletPageState extends State<WalletPage> {
                 color: Color.fromARGB(255, 255, 255, 255),
                 size: 16,
               ),
-              const SizedBox(width: 8),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _isWebSocketConnected ? Colors.green : Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
             ],
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.qr_code_scanner,
-              color: Color.fromARGB(255, 255, 255, 255),
-            ),
-            onPressed: () {
-              // TODO: Implementar navegação para a tela de QR Code
-            },
-          ),
           IconButton(
             icon: const Icon(
               Icons.delete_outline,
@@ -598,20 +593,8 @@ class _WalletPageState extends State<WalletPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        // TODO: Implementar navegação para a tela de Portfolio
-                      },
-                      child: const Text(
-                        "+\$0 (0.00%) Portfolio >",
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 45, 138, 93),
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+
+                    const SizedBox(height: 30),
                   ],
                 ),
               ),
@@ -623,13 +606,7 @@ class _WalletPageState extends State<WalletPage> {
                     "Enviar",
                     primaryBlue,
                         () => _navigateTo(AppRoutes.sendPage),
-                  ),
-                  _buildWalletActionButton(
-                    Icons.arrow_downward,
-                    "Receber",
-                    primaryBlue,
-                        () => _navigateTo(AppRoutes.receivePage),
-                  ),
+                  )
                 ],
               ),
               const SizedBox(height: 40),
