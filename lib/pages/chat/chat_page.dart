@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/chat_controller.dart';
 import '../../controllers/chat_scroll_controller.dart';
+import '../../services/chat_state_service.dart';
 import '../../widgets/chat/chat_message_item.dart';
 import '../../widgets/chat/chat_input_field.dart';
 import '../../widgets/chat/replying_to_widget.dart';
@@ -21,6 +22,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   late ChatController _chatController;
   late final ChatScrollController _scrollController = ChatScrollController();
   ChatMessage? _replyingToMessage;
+  bool _initialized = false;
+  String? _roomId;
 
   @override
   void initState() {
@@ -32,10 +35,15 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    final roomId = args['roomId'] as String;
+    if (_initialized) return;
+    _initialized = true;
 
-    _chatController = ChatController(roomId: roomId);
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    _roomId = args['roomId'] as String;
+
+    ChatStateService().setCurrentRoom(_roomId!);
+
+    _chatController = ChatController(roomId: _roomId!);
 
     _scrollController.onUserReachedBottom = () {
       _chatController.markAsRead();
@@ -66,10 +74,20 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+
     if (state == AppLifecycleState.resumed) {
+      ChatStateService().setActive();
       _chatController.reconnect();
+
     } else if (state == AppLifecycleState.paused) {
+      ChatStateService().setInactive();
       _chatController.sendTypingStatus(false);
+
+    } else if (state == AppLifecycleState.inactive) {
+      ChatStateService().setInactive();
+
+    } else if (state == AppLifecycleState.detached) {
+      ChatStateService().clearCurrentRoom();
     }
   }
 
@@ -133,54 +151,60 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
     return ChangeNotifierProvider.value(
       value: _chatController,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(jobTitle)
-            ],
-          ),
-        ),
-        body: Stack(
-          children: [
-            Column(
+      child: WillPopScope(
+        onWillPop: () async {
+          ChatStateService().clearCurrentRoom();
+          return true;
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildMessagesList(),
-                ),
-                Column(
-                  children: [
-                    if (_replyingToMessage != null)
-                      ReplyingToWidget(
-                        userName: _replyingToMessage!.sender['name'] ?? 'Usuário',
-                        message: _replyingToMessage!.message,
-                        onCancel: _cancelReply,
-                      ),
-                    ChatInputField(
-                      onSendMessage: _handleSendMessage,
-                      onTypingChanged: _chatController.sendTypingStatus,
-                    ),
-                  ],
-                ),
+                Text(jobTitle)
               ],
             ),
-            ListenableBuilder(
-              listenable: _scrollController,
-              builder: (context, child) {
-                if (!_scrollController.showScrollToBottomButton) {
-                  return const SizedBox.shrink();
-                }
-                return ScrollToBottomButton(
-                  onPressed: () {
-                    _scrollController.scrollToBottom(animated: true);
-                    _chatController.markAsRead();
-                  },
-                  unreadCount: _scrollController.unreadCount,
-                );
-              },
-            ),
-          ],
+          ),
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: _buildMessagesList(),
+                  ),
+                  Column(
+                    children: [
+                      if (_replyingToMessage != null)
+                        ReplyingToWidget(
+                          userName: _replyingToMessage!.sender['name'] ?? 'Usuário',
+                          message: _replyingToMessage!.message,
+                          onCancel: _cancelReply,
+                        ),
+                      ChatInputField(
+                        onSendMessage: _handleSendMessage,
+                        onTypingChanged: _chatController.sendTypingStatus,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              ListenableBuilder(
+                listenable: _scrollController,
+                builder: (context, child) {
+                  if (!_scrollController.showScrollToBottomButton) {
+                    return const SizedBox.shrink();
+                  }
+                  return ScrollToBottomButton(
+                    onPressed: () {
+                      _scrollController.scrollToBottom(animated: true);
+                      _chatController.markAsRead();
+                    },
+                    unreadCount: _scrollController.unreadCount,
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -236,9 +260,13 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
+
+    ChatStateService().clearCurrentRoom();
+
     super.dispose();
   }
 }
