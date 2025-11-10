@@ -266,10 +266,9 @@ class _JobProposalsPageState extends State<JobProposalsPage> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.attach_money, color: Colors.white, size: 18),
                     const SizedBox(width: 4),
                     Text(
-                      'Orçamento: R\$ ${widget.job.maxBudget.toStringAsFixed(2)}',
+                      'Orçamento: R\$ ${StringFormatter.formatAmount(widget.job.maxBudget)}',
                       style: const TextStyle(color: Colors.white),
                     ),
                     const SizedBox(width: 16),

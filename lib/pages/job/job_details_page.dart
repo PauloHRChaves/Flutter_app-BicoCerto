@@ -13,6 +13,7 @@ import '../../services/job_state_service.dart';
 import '../../utils/string_formatter.dart';
 import '../../widgets/location_navigation_widget.dart';
 import '../../widgets/status_badge.dart';
+import '../create/create_form.dart';
 import 'job_proposals_page.dart';
 
 class AppColors {
@@ -2563,7 +2564,7 @@ class _ProposalFormState extends State<_ProposalForm> {
       final result = await widget.proposalService.submitProposal(
         jobId: widget.job.jobId,
         description: _descriptionController.text.trim(),
-        amountEth: double.parse(_amountController.text),
+        amountEth: double.parse((_amountController.text.replaceAll(".", "")).replaceAll(",", ".")),
         estimatedTimeDays: int.parse(_timeController.text),
         password: _passwordController.text,
       );
@@ -2735,9 +2736,12 @@ class _ProposalFormState extends State<_ProposalForm> {
     return TextFormField(
       controller: _amountController,
       keyboardType: TextInputType.number,
+      inputFormatters: [
+        CurrencyInputFormatter(),
+      ],
       decoration: InputDecoration(
         labelText: 'Valor da proposta (R\$)',
-        hintText: '0.00',
+        hintText: '0,00',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
         ),
@@ -2747,7 +2751,7 @@ class _ProposalFormState extends State<_ProposalForm> {
         if (value == null || value.isEmpty) {
           return 'Por favor, informe o valor';
         }
-        final amount = double.tryParse(value);
+        final amount = double.tryParse((value.replaceAll(".", "")).replaceAll(",", "."));
         if (amount == null || amount <= 0) {
           return 'Valor inválido';
         }
