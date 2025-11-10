@@ -2,13 +2,14 @@
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import necessário
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
-  // Use o endereço do emulador Android para se conectar à sua máquina.
   final String baseUrl = dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:8000'; // Fallback para dev
   final _storage = const FlutterSecureStorage();
 
@@ -47,7 +48,7 @@ class AuthService {
   }
 
   // ----------------------------------------------------------------------
-  // MÉTODOS DE ARMAZENAMENTO ADICIONAIS (MANTIDOS)
+  // MÉTODOS DE ARMAZENAMENTO ADICIONAIS
   // ----------------------------------------------------------------------
 
   Future<void> saveUserId(String id) async {
@@ -174,8 +175,10 @@ class AuthService {
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
-    required Map<String, dynamic> deviceInfo,
   }) async {
+    
+    final Map<String, dynamic> deviceInfo = await getDeviceInfo();
+
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: <String, String>{
@@ -217,15 +220,45 @@ class AuthService {
     }
   }
 
+  
   // Simulação de informações de device - MOCK
+  // Future<Map<String, dynamic>> getDeviceInfo() async {
+  //   return {
+  //     "device_id": "generic-test-device-id",
+  //     "platform": "generic-test-platform",
+  //     "model": "Flutter Test Model",
+  //     "os_version": "1.0",
+  //     "app_version": "1.0.0"
+  //   };
+  // } 
+  
+
   Future<Map<String, dynamic>> getDeviceInfo() async {
-    return {
-      "device_id": "generic-test-device-id",
-      "platform": "generic-test-platform",
-      "model": "Flutter Test Model",
-      "os_version": "1.0",
-      "app_version": "1.0.0"
-    };
+    final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+    Map<String, dynamic> deviceData;
+
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfoPlugin.androidInfo;
+      deviceData = {
+        "device_id": androidInfo.id,
+        "platform": "Android",
+        "model": androidInfo.model,
+        "os_version": androidInfo.version.release,
+        "app_version": "1.0.0"
+      };
+    } else if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfoPlugin.iosInfo;
+      deviceData = {
+        "device_id": iosInfo.identifierForVendor,
+        "platform": "iOS",
+        "model": iosInfo.model,
+        "os_version": iosInfo.systemVersion,
+        "app_version": "1.0.0"
+      };
+    } else {
+      deviceData = {};
+    }
+    return deviceData;
   }
 
   // Logout

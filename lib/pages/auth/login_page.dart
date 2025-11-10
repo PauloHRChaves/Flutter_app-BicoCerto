@@ -35,15 +35,10 @@ class LoginPageState extends State<LoginPage> {
     // Valida o formulário antes de tentar o login
     if (_formKey.currentState!.validate()) {
       try {
-        // Uso da API: Chama o método para obter informações do dispositivo
-        final Map<String, dynamic> deviceInfo = await _authService
-            .getDeviceInfo();
-
         // Uso da API: Chama o método de login do AuthService, passando os dados
         await _authService.login(
           email: _emailController.text,
           password: _passwordController.text,
-          deviceInfo: deviceInfo,
         );
 
         if (mounted) {
