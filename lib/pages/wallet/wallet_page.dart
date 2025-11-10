@@ -7,6 +7,8 @@ import 'package:bico_certo/services/wallet_state_service.dart';
 import 'package:bico_certo/routes.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../../utils/string_formatter.dart';
+
 const Color lightBackground = Colors.white;
 const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
 const Color darkText = Color.fromARGB(255, 30, 30, 30);
@@ -482,7 +484,7 @@ class _WalletPageState extends State<WalletPage> {
 
         final value = double.tryParse(tx['value']?.toString() ?? '0') ?? 0.0;
         final formattedValue =
-            "R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}";
+            "R\$ ${StringFormatter.formatAmount(value)}";
 
         return ListTile(
           leading: CircleAvatar(

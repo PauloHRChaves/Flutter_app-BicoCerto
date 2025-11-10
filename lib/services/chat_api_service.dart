@@ -16,6 +16,18 @@ class ChatApiService {
     return await _storage.read(key: 'user_id');
   }
 
+  Future<void> removeFcmToken() async {
+    try {
+      final headers = await _getHeaders();
+      await http.delete(
+        Uri.parse('$baseUrl/chat/fcm-token/remove'),
+        headers: headers,
+      );
+    } catch (e) {
+      // Não lançar erro para não bloquear o logout
+    }
+  }
+
   Future<void> updateFcmToken(String token) async {
     final headers = await _getHeaders();
     await http.post(

@@ -420,22 +420,6 @@ class _SetProfileState extends State<ProfilePage> {
                           ),
                           SizedBox(height: screenHeight * 0.01),
 
-                          // ID do usuário
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "ID: ",
-                                style: TextStyle(fontSize: font, color: Colors.grey),
-                              ),
-                              Text(
-                                
-                                _id,
-                                style: TextStyle(color: Colors.grey, fontSize: font),
-                              ),
-                            ],
-                          ),
-
                           // city + state
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -494,32 +478,6 @@ class _SetProfileState extends State<ProfilePage> {
                       ),
                     ),
                     SizedBox(height: screenHeight * 0.005),
-
-                    
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Row(
-                        children: [
-                          _buildStatCard(
-                            title: "Trabalhos Concluídos",
-                            
-                            value: _jobdone,
-                            color: primaryBlue,
-                          ),
-                          const SizedBox(width: 10),
-                          _buildStarCard(
-                            title: "Média de Avaliações",
-                            
-                            value: _estrelas,
-                            color: Colors.amber,
-                            isRating: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.005),
-
-                    
                     Container(
                       color: Colors.white,
                       padding: const EdgeInsets.all(16),
@@ -534,7 +492,7 @@ class _SetProfileState extends State<ProfilePage> {
                           _buildActionButton(
                             context: context,
                             icon: Icons.dashboard_outlined, // Ícone de Dashboard
-                            label: "Dashboard",
+                            label: "Dashboard Cliente",
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -545,11 +503,15 @@ class _SetProfileState extends State<ProfilePage> {
                           ),
                           _buildActionButton(
                             context: context,
-                            icon: Icons.settings_outlined, // Ícone de Engrenagem
-                            label: "Configurações",
-                            onTap: () {
-                              
-                            },
+                            icon: Icons.dashboard, // Ícone de Engrenagem
+                            label: "Dashboard Provider",
+                              onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                    const ProviderDashboardPage(),
+                                  ),
+                                ),
                           ),
                           _buildActionButton(
                             context: context,
