@@ -1,5 +1,3 @@
-// lib/pages/wallet/send_page.dart
-
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
@@ -64,8 +62,8 @@ class _SendPageState extends State<SendPage> {
             backgroundColor: Colors.green,
           ),
         );
-        // Retorna para a tela da carteira após o sucesso
-        Navigator.of(context).pop();
+        // Retorna para a tela da carteira após o sucesso e sinaliza para atualizar o saldo
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -188,7 +186,7 @@ class _SendPageState extends State<SendPage> {
                 ),
                 obscureText: !_passwordVisible,
                 validator: (value) =>
-                    value!.isEmpty ? 'A senha é obrigatória' : null,
+                value!.isEmpty ? 'A senha é obrigatória' : null,
               ),
 
               const SizedBox(height: 40),
@@ -207,9 +205,9 @@ class _SendPageState extends State<SendPage> {
                 label: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                        'Confirmar Envio',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                  'Confirmar Envio',
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
             ],
           ),
