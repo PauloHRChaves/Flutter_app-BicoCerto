@@ -553,10 +553,14 @@ class _SetProfileState extends State<ProfilePage> {
                           ),
                           _buildActionButton(
                             context: context,
-                            icon: Icons.work_outline, // Ícone de Jobs (Maleta)
+                            icon: Icons.work_outline, 
                             label: "Jobs",
-                            onTap: () {
-                              
+                            onTap: () {                        
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                AppRoutes.ordersPage,
+                                (route) => route.isFirst,
+                              );
                             },
                           ),
                         ],
