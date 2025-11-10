@@ -16,6 +16,14 @@ class ChatApiService {
     return await _storage.read(key: 'user_id');
   }
 
+  Future<void> updateFcmToken(String token) async {
+    final headers = await _getHeaders();
+    await http.post(
+      Uri.parse('$baseUrl/chat/fcm-token/update?token=$token'),
+      headers: headers,
+    );
+  }
+
   Future<Map<String, String>> _getHeaders() async {
     final token = await getToken();
     if (token == null) {
@@ -26,6 +34,38 @@ class ChatApiService {
       'ngrok-skip-browser-warning': 'true',
       'Content-Type': 'application/json; charset=UTF-8',
     };
+  }
+
+  Future<Map<String, dynamic>> getRoomInfo(String roomId) async {
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        throw Exception('Token não encontrado');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/chat/room/$roomId/info'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        return jsonResponse['data'];
+      } else if (response.statusCode == 404) {
+        throw Exception('Sala não encontrada');
+      } else if (response.statusCode == 403) {
+        throw Exception('Sem permissão para acessar esta sala');
+      } else {
+        throw Exception('Erro ao buscar informações da sala');
+      }
+    } catch (e) {
+      print('Erro em getRoomInfo: $e');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> createChatRoom({
