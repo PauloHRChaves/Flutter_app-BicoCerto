@@ -1899,7 +1899,7 @@ class JobCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'R\$ ${job.maxBudget.toStringAsFixed(2)}',
+                            'R\$ ${StringFormatter.formatAmount(job.maxBudget)}',
                             style: TextStyle(
                               fontSize: screenWidth * 0.042,
                               fontWeight: FontWeight.bold,

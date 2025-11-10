@@ -4,6 +4,8 @@ import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/services/job_service.dart';
 import 'package:bico_certo/pages/job/job_details_page.dart';
 
+import '../../utils/string_formatter.dart';
+
 class JobsListPage extends StatefulWidget {
   final String? category;
   final String? searchTerm;
@@ -943,7 +945,7 @@ class JobCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'R\$ ${job.maxBudget.toStringAsFixed(2)}',
+                        'R\$ ${StringFormatter.formatAmount(job.maxBudget)}',
                         style: TextStyle(
                           fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.bold,
