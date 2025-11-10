@@ -8,7 +8,7 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/services/auth_guard.dart';
 import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/pages/wallet/create_wallet_page.dart';
-
+import 'package:bico_certo/pages/profile/edit_profile_page.dart';
 import '../dashboard/provider_dashboard_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -19,41 +19,106 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _SetProfileState extends State<ProfilePage> {
-  //Lógica de navegação e checagem da Wallet
   final AuthService _authService = AuthService();
 
-  // GET ME
-  String _fullName = '...'; 
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  // Dados do Perfil (do /auth/me)
+  String _id = '...';
+  String _fullName = '...';
+  String _city = '...';
+  String _state = '...';
+  String _description = '...';
+  // URL de Imagem Padrão
+  String _imgUrl =
+      "https://img.freepik.com/vetores-premium/uma-silhueta-azul-do-rosto-de-uma-pessoa-contra-um-fundo-branco_754208-70.jpg?w=2000";
+
+  // Dados de Stats (do /provider/dashboard/quick-stats)
+  int _jobdone = 0;
+  double _estrelas = 0.0;
+
   @override
   void initState() {
     super.initState();
-    _loadUserData(); 
+    _loadAllData(); 
   }
 
-  void _loadUserData() async {
+  
+  void _loadAllData() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    String? profileError;
+    String? statsError;
+
     try {
       final userData = await _authService.getUserProfile();
+      if (!mounted) return;
 
-      if (userData.containsKey('full_name') && userData['full_name'] != null) {
-        setState(() {
-          _fullName = userData['full_name'];
-        });
-      } else {
-         setState(() {
-          _fullName = 'Usuário'; 
-        });
-      }
-    } catch (e) {
       
-      print('Erro ao buscar dados do usuário: $e');
+      final userProfile = userData['user'];
+
+      if (userProfile == null) {
+        throw Exception("Objeto 'user' não encontrado na resposta da API.");
+      }
+
+    
       setState(() {
-        _fullName = 'Erro ao carregar';
+        _fullName = userProfile['full_name'] ?? 'Usuário';
+        _id = userProfile['id'] ?? '...';
+        _city = userProfile['city'] ?? 'Cidade'; 
+        _state = userProfile['state'] ?? ''; 
+        _description = userProfile['description'] ?? 'Sem descrição.';
+        
+        if (userProfile['profile_pic_url'] != null) {
+          _imgUrl = userProfile['profile_pic_url'];
+        }
+      });
+    } catch (e) {
+      profileError = 'Falha grave ao carregar o seu perfil.';
+      print('Erro em getUserProfile: $e');
+    }
+
+    try {
+      final statsData = await _authService.getProviderQuickStats();
+      if (!mounted) return;
+
+      setState(() {
+        _jobdone = (statsData['completedJobs'] as num?)?.toInt() ?? 0;
+        _estrelas = (statsData['rating'] as num?)?.toDouble() ?? 0.0;
+      });
+    } catch (e) {
+      statsError = 'Falha ao carregar estatísticas (carteira pode não existir).';
+      print('Erro em getProviderQuickStats: $e');
+      
+      setState(() {
+        _jobdone = 0;
+        _estrelas = 0.0;
       });
     }
+
+    
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      
+      if (profileError != null) {
+        _errorMessage = profileError;
+        _fullName = 'Erro';
+      } else if (statsError != null) {
+        
+        print(statsError); 
+      }
+    });
   }
 
-  //Lógica de navegação e checagem da Wallet
+  
   void _checkAndNavigateToWallet() async {
+    
     final details = await _authService.getWalletDetails();
 
     final bool walletExists =
@@ -61,11 +126,11 @@ class _SetProfileState extends State<ProfilePage> {
 
     if (mounted) {
       if (walletExists) {
-        // Carteira existe ou os detalhes vieram
+        
         Navigator.of(context)
             .push(MaterialPageRoute(builder: (context) => const WalletPage()));
       } else {
-        // Carteira não existe (o retorno foi {'has_wallet': false})
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Carteira não encontrada. Por favor, crie uma.')),
@@ -172,13 +237,13 @@ class _SetProfileState extends State<ProfilePage> {
     );
   }
 
-  // funções horizontais
   Widget _buildActionButton({
     required BuildContext context,
     required IconData icon,
     required String label,
     VoidCallback? onTap,
   }) {
+
     const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
     const Color activeBlue = Color.fromARGB(255, 5, 84, 130);
 
@@ -239,21 +304,6 @@ class _SetProfileState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    
-    // os dados tem que ser da api não estaticos
-    final String id = '123456789';
-    final String cidade = 'CIDADE';
-    final String estado = 'ESTADO';
-    final String description =
-        'descrição';
-
-    final int jobdone = 0;
-    final double estrelas = 2;
-
-    final img =
-        "https://img.freepik.com/vetores-premium/uma-silhueta-azul-do-rosto-de-uma-pessoa-contra-um-fundo-branco_754208-70.jpg?w=2000";
-
-    // Responsividade
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -266,7 +316,6 @@ class _SetProfileState extends State<ProfilePage> {
     const Color lightBackground = Color.fromARGB(255, 230, 230, 230);
     const Color darkText = Color.fromARGB(255, 30, 30, 30);
 
-    // FIX SEGURANÇA: AuthGuard envolve todo o conteúdo do Scaffold
     return AuthGuard(
         child: Scaffold(
       backgroundColor: lightBackground,
@@ -284,201 +333,239 @@ class _SetProfileState extends State<ProfilePage> {
         ),
         actions: [
           IconButton(
+            
             icon: const Icon(
-              Icons.more_vert,
+              Icons.edit_outlined, 
               color: Colors.white,
             ),
+            tooltip: 'Editar Perfil',
+            onPressed: () async {
+              
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => EditProfilePage(
+                
+                    currentName: _fullName,
+                    currentCity: _city,
+                    currentState: _state,
+                    currentDescription: _description,
+                    currentPicUrl: _imgUrl,
+                  ),
+                ),
+              );
 
-            // ⚠️ LOGICA NÃO APLICADA
-            onPressed: () {},
+              
+              if (result == true && mounted) {
+                _loadAllData();
+              }
+            },
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 10),
-        children: [
-          SizedBox(height: screenHeight * 0.01),
-
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ⚠️ IMAGEM ENVIADA PELO USUÁRIO
-                Container(
-                  width: avatarSize,
-                  height: avatarSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: primaryBlue, width: 3),
-                    color: Colors.black,
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        img,
-                      ),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
+      
+      
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      _errorMessage,
+                      style: TextStyle(color: Colors.red, fontSize: 16),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                ),
-                SizedBox(height: screenHeight * 0.01),
-
-                // --- 🔽 NOME DE USUÁRIO ATUALIZADO 🔽 ---
-                Text(
-                  _fullName, // Mostra "...", depois o nome, ou um erro.
-                  style: TextStyle(
-                    fontSize: fonttitle,
-                    fontWeight: FontWeight.bold,
-                    color: darkText,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.01),
-
-                // ⚠️ ->  id
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                )
+              : ListView(
+                  padding: const EdgeInsets.only(bottom: 10),
                   children: [
-                    Text(
-                      "ID: ",
-                      style: TextStyle(fontSize: font, color: Colors.grey),
+                    SizedBox(height: screenHeight * 0.01),
+
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Imagem do usuário
+                          Container(
+                            width: avatarSize,
+                            height: avatarSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: primaryBlue, width: 3),
+                              color: Colors.black,
+                              image: DecorationImage(
+                                
+                                image: NetworkImage(_imgUrl),
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+
+                          
+                          Text(
+                            _fullName, // Variável de state
+                            style: TextStyle(
+                              fontSize: fonttitle,
+                              fontWeight: FontWeight.bold,
+                              color: darkText,
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+
+                          // ID do usuário
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "ID: ",
+                                style: TextStyle(fontSize: font, color: Colors.grey),
+                              ),
+                              Text(
+                                
+                                _id,
+                                style: TextStyle(color: Colors.grey, fontSize: font),
+                              ),
+                            ],
+                          ),
+
+                          // city + state
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                
+                                _city,
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: font,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                ' - ',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: font,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                // ⚠️ ATUALIZADO: Vem da variável de state _state
+                                _state,
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: font,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+
+                          
+                          Container(
+                            padding: EdgeInsets.all(15),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: lightBackground,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+
+                            
+                            child: Text(
+                              
+                              _description,
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                color: darkText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      id,
-                      style: TextStyle(color: Colors.grey, fontSize: font),
+                    SizedBox(height: screenHeight * 0.005),
+
+                    
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        children: [
+                          _buildStatCard(
+                            title: "Trabalhos Concluídos",
+                            
+                            value: _jobdone,
+                            color: primaryBlue,
+                          ),
+                          const SizedBox(width: 10),
+                          _buildStarCard(
+                            title: "Média de Avaliações",
+                            
+                            value: _estrelas,
+                            color: Colors.amber,
+                            isRating: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.005),
+
+                    
+                    Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildActionButton(
+                              context: context,
+                              icon: Icons.account_balance_wallet_outlined,
+                              label: "Carteira",
+                              onTap: _checkAndNavigateToWallet),
+                          _buildActionButton(
+                            context: context,
+                            icon: Icons.dashboard_outlined, // Ícone de Dashboard
+                            label: "Dashboard",
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ClientDashboardPage(), 
+                              ),
+                            ),
+                          ),
+                          _buildActionButton(
+                            context: context,
+                            icon: Icons.settings_outlined, // Ícone de Engrenagem
+                            label: "Configurações",
+                            onTap: () {
+                              
+                            },
+                          ),
+                          _buildActionButton(
+                            context: context,
+                            icon: Icons.work_outline, // Ícone de Jobs (Maleta)
+                            label: "Jobs",
+                            onTap: () {
+                              
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-
-                // ⚠️ -> Cidade + Estado
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      cidade,
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: font,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      ' - ',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: font,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      estado,
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: font,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenHeight * 0.01),
-
-                // Cartão de Descrição
-                Container(
-                  padding: EdgeInsets.all(15),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: lightBackground,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-
-                  // ⚠️ -> Descrição
-                  child: Text(
-                    description,
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      color: darkText,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.005),
-
-          // --- Seção de Estatísticas (Trabalhos Concluídos e Avaliações) ---
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                _buildStatCard(
-                  title: "Trabalhos Concluídos",
-                  // ⚠️ ->  Job Done
-                  value: jobdone,
-                  color: primaryBlue,
-                ),
-                const SizedBox(width: 10),
-                _buildStarCard(
-                  title: "Média de Avaliações",
-                  // ⚠️ ->  Estrelas
-                  value: estrelas,
-                  color: Colors.amber,
-                  isRating: true,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.005),
-
-          // --- Barra de Navegação de Ícones (Funcionalidades) ---
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildActionButton(
-                    context: context,
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: "Carteira",
-                    onTap: _checkAndNavigateToWallet),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.dashboard_outlined, // Ícone de Dashboard
-                  label: "Dashboard",
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const ClientDashboardPage(), // Mantido, pois parece ser a tela de Dashboard
-                    ),
-                  ),
-                ),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.settings_outlined, // Ícone de Engrenagem
-                  label: "Configurações",
-                  onTap: () {
-                    // TODO: Navegar para a página de Configurações
-                  },
-                ),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.work_outline, // Ícone de Jobs (Maleta)
-                  label: "Jobs",
-                  onTap: () {
-                    // TODO: Navegar para a página de Jobs (ex: JobsListPage)
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
       bottomNavigationBar: CustomBottomNavBar(
+        
         currentIndex: 3,
         onTap: (index) {
           if (index == 0) {
@@ -500,10 +587,7 @@ class _SetProfileState extends State<ProfilePage> {
               (route) => route.isFirst,
             );
           } else if (index == 3) {
-            /*
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, 
-              (route) => route.isFirst,
-            );*/
+           
           }
         },
       ),

@@ -140,6 +140,40 @@ class AuthService {
     }
   }
 
+  // Função auxiliar para requisições PUT protegidas por token.
+  Future<Map<String, dynamic>> _securePut(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+    
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer $token',
+      'ngrok-skip-browser-warning': 'true',
+    };
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      return responseBody['data'] as Map<String, dynamic>? ?? {};
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição PUT. Status: ${response.statusCode}');
+    }
+  }
+
+
   // ----------------------------------------------------------------------
   // LOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
   // ----------------------------------------------------------------------
@@ -324,20 +358,25 @@ class AuthService {
   // MÉTODOS DE PERFIL E WALLET
   // ----------------------------------------------------------------------
   
-  // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
+  // GET /auth/me
   Future<Map<String, dynamic>> getUserProfile() async {
     final responseData = await _secureGet('auth/me');
-    return responseData['data']['user'] as Map<String, dynamic>? ?? {}; 
+    return responseData['data'] as Map<String, dynamic>? ?? {}; 
   }
-  
+
+  //(PUT /auth/profile)
+  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> profileData) async {
+    final responseData = await _securePut('auth/profile', body: profileData);
+    return responseData;
+  }
   // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
   Future<Map<String, dynamic>> getWalletDetails() async {
     try {
       final responseData = await _secureGet('wallet/my-wallet');
       
-      // CASO A: API envia o status de "não tem carteira"
-      if (responseData.containsKey('has_wallet')) {
-         return responseData; // Retorna {"has_wallet": false, ...}
+      
+      if (responseData['data'] != null && responseData['data']['has_wallet'] == false) {
+         return responseData['data']; // Retorna {"has_wallet": false}
       }
       
       // CASO B: API envia os detalhes da carteira (Carteira existe).
@@ -465,5 +504,11 @@ class AuthService {
       } catch (_) {}
       throw Exception('Falha na requisição DELETE. Status: ${response.statusCode}');
     }
+  }
+
+  Future<Map<String, dynamic>> getProviderQuickStats() async {
+    final responseData = await _secureGet('api/provider/dashboard/quick-stats');
+    
+    return responseData['data'] as Map<String, dynamic>? ?? {};
   }
 }
