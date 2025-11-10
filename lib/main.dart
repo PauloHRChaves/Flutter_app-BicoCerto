@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:bico_certo/pages/job/job_details_page.dart';
+import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/services/job_service.dart';
 import 'package:bico_certo/services/job_state_service.dart';
+import 'package:bico_certo/services/wallet_state_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/local_storage_service.dart';
 import 'package:bico_certo/routes.dart';
@@ -51,6 +53,8 @@ void main() async {
             _handleNotificationClick(data['room_id']);
           } else if (type == 'job') {
             _handleJobNotificationClick(data['job_id']);
+          }else if (type == 'wallet') {
+            _handleWalletNotificationClick();
           }
         } catch (e) {
           // Erro ao processar payload
@@ -84,6 +88,18 @@ void main() async {
   final isFirstTime = await LocalStorageService.getIsFirstTime();
   await dotenv.load(fileName: ".env");
   runApp(MyApp(isFirstTime: isFirstTime));
+}
+
+Future<void> _handleWalletNotificationClick() async {
+  try {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => const WalletPage(),
+      ),
+    );
+  } catch (e) {
+    print('Erro ao abrir carteira: $e');
+  }
 }
 
 Future<void> _handleJobNotificationClick(String jobId) async {
@@ -268,6 +284,32 @@ class _MyAppState extends State<MyApp> {
                 payload: jsonEncode({'type': 'job', 'job_id': jobId}),
               );
             }
+          }else if (type == 'wallet_transaction') {
+
+            final walletState = WalletStateService();
+            final isViewingWallet = walletState.isViewingWallet();
+
+            if (isViewingWallet) {
+              return;
+            }
+
+            if (message.notification != null) {
+              flutterLocalNotificationsPlugin.show(
+                message.hashCode,
+                message.notification!.title,
+                message.notification!.body,
+                const NotificationDetails(
+                  android: AndroidNotificationDetails(
+                    'wallet_transactions',
+                    'Transações da Carteira',
+                    importance: Importance.high,
+                    priority: Priority.high,
+                    icon: '@mipmap/ic_launcher',
+                  ),
+                ),
+                payload: jsonEncode({'type': 'wallet'}),
+              );
+            }
           }
         });
 
@@ -301,6 +343,8 @@ class _MyAppState extends State<MyApp> {
       if (jobId != null) {
         _handleJobNotificationClick(jobId);
       }
+    }else if (type == 'wallet_transaction') {
+      _handleWalletNotificationClick();
     }
   }
 
