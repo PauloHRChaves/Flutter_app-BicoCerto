@@ -1,6 +1,8 @@
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
+import '../create/create_form.dart';
+
 class SendPage extends StatefulWidget {
   const SendPage({super.key});
 
@@ -136,13 +138,14 @@ class _SendPageState extends State<SendPage> {
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(
-                  labelText: 'Valor a Enviar (ETH)',
+                  labelText: 'Valor a Enviar (BRL)',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.attach_money),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  CurrencyInputFormatter(),
+                ],
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'O valor é obrigatório.';
