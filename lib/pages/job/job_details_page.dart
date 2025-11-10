@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:bico_certo/services/job_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/models/job_model.dart';
@@ -5,10 +7,13 @@ import 'package:bico_certo/services/proposal_service.dart';
 import 'package:bico_certo/services/chat_api_service.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:intl/intl.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../../services/job_state_service.dart';
 import '../../utils/string_formatter.dart';
 import '../../widgets/location_navigation_widget.dart';
 import '../../widgets/status_badge.dart';
+import '../create/create_form.dart';
 import 'job_proposals_page.dart';
 
 class AppColors {
@@ -131,6 +136,8 @@ class JobDetailsPage extends StatefulWidget {
 class _JobDetailsPageState extends State<JobDetailsPage> {
   final ProposalService _proposalService = ProposalService();
   final ChatApiService _chatApiService = ChatApiService();
+  final JobStateService _jobStateService = JobStateService();
+  WebSocketChannel? _websocketChannel;
   final AuthService _authService = AuthService();
   final JobService _jobService = JobService();
 
@@ -141,21 +148,115 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   bool _isJobOwner = false;
   bool _isCheckingOwner = true;
   bool _isProvider = false;
+  late Job _currentJob;
 
   @override
   void initState() {
     super.initState();
-    _proposalCount = widget.job.proposalCount;
+    _currentJob = widget.job;
+    _proposalCount = _currentJob.proposalCount;
     _checkIfJobOwner();
     _loadMyProposal();
     _checkIfProvider();
+
+    _jobStateService.setCurrentJob(_currentJob.jobId);
+    _connectWebSocket();
+
+  }
+
+  @override
+  void dispose() {
+    _jobStateService.clearCurrentJob();
+    _websocketChannel?.sink.close();
+    super.dispose();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return;
+
+      _websocketChannel = await _chatApiService.connectNotificationsWebSocket();
+
+      _websocketChannel!.stream.listen(
+            (message) {
+          _handleWebSocketMessage(message);
+        },
+        onError: (error) {
+          print('Erro no WebSocket: $error');
+        },
+      );
+    } catch (e) {
+      print('Erro ao conectar WebSocket: $e');
+    }
+  }
+
+  void _handleWebSocketMessage(dynamic message) {
+    try {
+      final data = jsonDecode(message);
+      final type = data['type'];
+
+      if (type == 'job_status_update') {
+        final updateData = data['data'];
+        final jobId = updateData['job_id'];
+
+        if (jobId == _currentJob.jobId) {
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.update, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        updateData['message'] ?? 'Job atualizado',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.blue[700],
+                duration: const Duration(seconds: 4),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+
+          _reloadJobDetails();
+        }
+      }
+    } catch (e) {
+      print('Erro ao processar mensagem WebSocket: $e');
+    }
+  }
+
+  Future<void> _reloadJobDetails() async {
+
+    try {
+      final updatedJob = await _jobService.getJobById(_currentJob.jobId);
+
+      if (updatedJob != null && mounted) {
+        setState(() {
+          _currentJob = updatedJob;
+          _proposalCount = updatedJob.proposalCount;
+        });
+
+        await _loadMyProposal();
+        await _checkIfProvider();
+
+      }
+    } catch (e) {
+      print('Erro ao recarregar job: $e');
+    }
   }
 
   Future<void> _checkIfProvider() async {
     try {
       final userWalletAddress = await _authService.getAddress();
-      if (userWalletAddress != null && widget.job.providerAddress.isNotEmpty) {
-        final providerAddress = widget.job.providerAddress.toLowerCase();
+      if (userWalletAddress != null && _currentJob.providerAddress.isNotEmpty) {
+        final providerAddress = _currentJob.providerAddress.toLowerCase();
         final userAddress = userWalletAddress.toLowerCase();
 
         setState(() {
@@ -180,7 +281,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
     try {
       final result = await _jobService.approveJob(
-        jobId: widget.job.jobId,
+        jobId: _currentJob.jobId,
         rating: rating,
         password: password,
       );
@@ -221,12 +322,12 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
     try {
       final result = await _jobService.completeJob(
-        jobId: widget.job.jobId,
+        jobId: _currentJob.jobId,
         password: password,
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // Fechar loading
+      Navigator.pop(context);
 
       if (result['success'] == true) {
         _showSuccessSnackBar(result['message'] ?? 'Job concluído com sucesso!');
@@ -263,10 +364,10 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
         throw Exception('Usuário não autenticado');
       }
 
-      final providerId = widget.job.providerId;
+      final providerId = _currentJob.providerId;
 
       final roomData = await _chatApiService.createChatRoom(
-        jobId: widget.job.jobId,
+        jobId: _currentJob.jobId,
         providerId: providerId,
         clientId: currentUserId,
       );
@@ -281,7 +382,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
           '/chat',
           arguments: {
             'roomId': roomId,
-            'jobTitle': widget.job.metadata.data.title,
+            'jobTitle': _currentJob.metadata.data.title,
           },
         );
       } else {
@@ -300,7 +401,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     try {
       final userWalletAddress = await _authService.getAddress();
       if (userWalletAddress != null) {
-        final jobClientAddress = widget.job.client.toLowerCase();
+        final jobClientAddress = _currentJob.client.toLowerCase();
         final userAddress = userWalletAddress.toLowerCase();
 
         setState(() {
@@ -330,7 +431,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     setState(() => _isLoadingProposal = true);
 
     try {
-      final proposal = await _proposalService.getMyProposalForJob(widget.job.jobId);
+      final proposal = await _proposalService.getMyProposalForJob(_currentJob.jobId);
       if (mounted) {
         setState(() {
           _myProposal = proposal;
@@ -440,7 +541,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: _ProposalForm(
-          job: widget.job,
+          job: _currentJob,
           proposalService: _proposalService,
           onProposalSubmitted: _onProposalSubmitted,
         ),
@@ -458,9 +559,9 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       }
 
       final roomData = await _chatApiService.createChatRoom(
-        jobId: widget.job.jobId,
+        jobId: _currentJob.jobId,
         providerId: currentUserId,
-        clientId: widget.job.metadata.data.employer.userId,
+        clientId: _currentJob.metadata.data.employer.userId,
       );
 
       setState(() => _isLoadingChat = false);
@@ -473,7 +574,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
           '/chat',
           arguments: {
             'roomId': roomId,
-            'jobTitle': widget.job.metadata.data.title,
+            'jobTitle': _currentJob.metadata.data.title,
           },
         );
       } else {
@@ -490,9 +591,9 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   Widget build(BuildContext context) {
     final hasActiveProposal = ProposalStatusHelpers.isActiveProposal(_myProposal);
     final isLoading = _isCheckingOwner || _isLoadingProposal;
-    final isInProgress = widget.job.status != JobStatus.open;
-    final isAcceptedOrInProgress = widget.job.status == JobStatus.accepted ||
-        widget.job.status == JobStatus.inProgress;
+    final isInProgress = _currentJob.status != JobStatus.open;
+    final isAcceptedOrInProgress = _currentJob.status == JobStatus.accepted ||
+        _currentJob.status == JobStatus.inProgress;
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -501,7 +602,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _JobHeader(
-              job: widget.job,
+              job: _currentJob,
               proposalCount: _proposalCount,
             ),
             Padding(
@@ -509,14 +610,14 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_isJobOwner && widget.job.status == JobStatus.open)
+                  if (_isJobOwner && _currentJob.status == JobStatus.open)
                     _OwnerSection(
-                      job: widget.job,
+                      job: _currentJob,
                       proposalCount: _proposalCount,
                     ),
-                    if (_isJobOwner && widget.job.status == JobStatus.completed)
+                    if (_isJobOwner && _currentJob.status == JobStatus.completed)
                         _ApproveJobSection(
-                        job: widget.job,
+                        job: _currentJob,
                         onApproveJob: _approveJob,
                       ),
                   if (!_isJobOwner) ...[
@@ -535,28 +636,28 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                     if (!isLoading && _isProvider && isAcceptedOrInProgress)
                       _CompleteJobSection(
                         onCompleteJob: _completeJob,
-                        jobStatus: widget.job.status,
+                        jobStatus: _currentJob.status,
                       ),
-                    if (widget.job.status == JobStatus.completed)
-                      _ApprovalTimerCard(job: widget.job),
+                    if (_currentJob.status == JobStatus.completed)
+                      _ApprovalTimerCard(job: _currentJob),
                   ],
-                  if (!isLoading && (_isJobOwner || widget.job.status == JobStatus.open)) ...[
-                    _BudgetSection(maxBudget: widget.job.maxBudget, job: widget.job),
+                  if (!isLoading && (_isJobOwner || _currentJob.status == JobStatus.open)) ...[
+                    _BudgetSection(maxBudget: _currentJob.maxBudget, job: _currentJob),
                     const SizedBox(height: AppDimensions.spacingLarge),
                   ],
-                  _DescriptionSection(description: widget.job.metadata.data.description),
+                  _DescriptionSection(description: _currentJob.metadata.data.description),
                   const SizedBox(height: AppDimensions.spacingLarge),
-                  _InformationSection(job: widget.job),
+                  _InformationSection(job: _currentJob),
                   const SizedBox(height: AppDimensions.spacingLarge),
                   if (_isJobOwner && isInProgress)
                     _ProviderSection(
-                      job: widget.job,
+                      job: _currentJob,
                       isLoadingChat: _isLoadingChat,
                       onChatPressed: _startChatWithProvider,
                     ),
                   if (!_isJobOwner)
                     _ClientSection(
-                      job: widget.job,
+                      job: _currentJob,
                       isLoadingChat: _isLoadingChat,
                       onChatPressed: _startChatWithClient,
                     ),
@@ -924,16 +1025,7 @@ class _OwnerSection extends StatelessWidget {
                         value: proposalCount.toString(),
                         color: Colors.orange,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        icon: _getJobStatusIcon(job.status),
-                        label: 'Status',
-                        value: job.status.displayName,
-                        color: job.status.color,
-                      ),
-                    ),
+                    )
                   ],
                 ],
               ),
@@ -2472,7 +2564,7 @@ class _ProposalFormState extends State<_ProposalForm> {
       final result = await widget.proposalService.submitProposal(
         jobId: widget.job.jobId,
         description: _descriptionController.text.trim(),
-        amountEth: double.parse(_amountController.text),
+        amountEth: double.parse((_amountController.text.replaceAll(".", "")).replaceAll(",", ".")),
         estimatedTimeDays: int.parse(_timeController.text),
         password: _passwordController.text,
       );
@@ -2644,9 +2736,12 @@ class _ProposalFormState extends State<_ProposalForm> {
     return TextFormField(
       controller: _amountController,
       keyboardType: TextInputType.number,
+      inputFormatters: [
+        CurrencyInputFormatter(),
+      ],
       decoration: InputDecoration(
         labelText: 'Valor da proposta (R\$)',
-        hintText: '0.00',
+        hintText: '0,00',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
         ),
@@ -2656,7 +2751,7 @@ class _ProposalFormState extends State<_ProposalForm> {
         if (value == null || value.isEmpty) {
           return 'Por favor, informe o valor';
         }
-        final amount = double.tryParse(value);
+        final amount = double.tryParse((value.replaceAll(".", "")).replaceAll(",", "."));
         if (amount == null || amount <= 0) {
           return 'Valor inválido';
         }

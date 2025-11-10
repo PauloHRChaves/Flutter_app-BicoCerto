@@ -156,6 +156,70 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         ),
       ),
       actions: [
+        PopupMenuButton<String>(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.download, color: Colors.green[700], size: 20),
+          ),
+          tooltip: 'Exportar',
+          onSelected: (value) async {
+            try {
+              if (value == 'pdf') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Gerando PDF...')),
+                );
+                await _dashboardService.downloadClientPDF();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PDF baixado com sucesso!')),
+                  );
+                }
+              } else if (value == 'excel') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Gerando Excel...')),
+                );
+                await _dashboardService.downloadClientExcel();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Excel baixado com sucesso!')),
+                  );
+                }
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Erro ao exportar: $e')),
+                );
+              }
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'pdf',
+              child: Row(
+                children: [
+                  Icon(Icons.picture_as_pdf, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Exportar PDF'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'excel',
+              child: Row(
+                children: [
+                  Icon(Icons.table_chart, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Exportar Excel'),
+                ],
+              ),
+            ),
+          ],
+        ),
         IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),

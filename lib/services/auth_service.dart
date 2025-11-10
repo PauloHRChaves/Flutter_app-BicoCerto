@@ -1,11 +1,13 @@
 // lib/services/auth_service.dart
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'chat_api_service.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
@@ -141,6 +143,40 @@ class AuthService {
     }
   }
 
+  // Função auxiliar para requisições PUT protegidas por token.
+  Future<Map<String, dynamic>> _securePut(String endpoint, {Map<String, dynamic>? body}) async {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+    
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer $token',
+      'ngrok-skip-browser-warning': 'true',
+    };
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      return responseBody['data'] as Map<String, dynamic>? ?? {};
+    } else {
+      try {
+        final Map<String, dynamic> errorResponse = json.decode(response.body);
+        if (errorResponse.containsKey('detail')) {
+          throw Exception('Erro de API (${response.statusCode}): ${errorResponse['detail']}');
+        }
+      } catch (_) {}
+      throw Exception('Falha na requisição PUT. Status: ${response.statusCode}');
+    }
+  }
+
+
   // ----------------------------------------------------------------------
   // LOGICA DE AUTENTICAÇÃO - LOGIN / REGISTER / LOGOUT / RESET PASS. / FORGOT PASS.
   // ----------------------------------------------------------------------
@@ -171,6 +207,26 @@ class AuthService {
     }
   }
 
+  Future<void> _updateFcmTokenAfterLogin() async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        final token = await getToken();
+        if (token != null) {
+          await http.post(
+            Uri.parse('$baseUrl/chat/fcm-token/update?token=$fcmToken'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          );
+        }
+      }
+    } catch (e) {
+      // Não lançar erro para não bloquear o login
+    }
+  }
+
   // Lógica de Login (Com checagem robusta de Token)
   Future<Map<String, dynamic>> login({
     required String email,
@@ -183,6 +239,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/login'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: jsonEncode(<String, dynamic>{
         'email': email,
@@ -190,31 +247,28 @@ class AuthService {
         'device_info': deviceInfo,
       }),
     );
-    
-    // Processamento da Resposta
+
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
       final data = responseBody['data'];
-      
+
       if (data != null && data['access_token'] is String) {
         final String accessToken = data['access_token'];
-        
-        // Salvamento do Token
+
         await saveToken(accessToken);
-        
-        // Salvamento de UserId e Address (Se existirem)
+
         final String? userId = data['user']?['id'];
         final String? address = data['user']?['address'];
         if (userId != null) await saveUserId(userId);
         if (address != null) await saveAddress(address);
-        
-        return responseBody; // Sucesso, retorna os dados
+
+        await _updateFcmTokenAfterLogin();
+
+        return responseBody;
       } else {
         throw Exception('Resposta de login inválida. Token não encontrado na resposta.');
       }
-
     } else {
-      // Tratamento de Erro (Status code != 200)
       Map<String, dynamic> jsonResponse = json.decode(response.body);
       throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no login.');
     }
@@ -261,29 +315,41 @@ class AuthService {
     return deviceData;
   }
 
-  // Logout
   Future<void> logout() async {
     final token = await getToken();
-    
+
+    if (token != null) {
+      try {
+        final chatService = ChatApiService();
+        await chatService.removeFcmToken();
+      } catch (e) {
+        // Erro
+      }
+
+      try {
+        await http.post(
+          Uri.parse('$baseUrl/auth/logout'),
+          headers: <String, String>{
+            'Authorization': 'Bearer $token',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        );
+      } catch (e) {
+        // Erro
+      }
+    }
+
     await deleteToken();
     await deleteUserId();
     await deleteAddress();
-    
-    if (token != null) {
-      await http.post(
-        Uri.parse('$baseUrl/auth/logout'),
-        headers: <String, String>{
-          'Authorization': 'Bearer $token',
-        },
-      );
-    }
   }
+
 
   // ESQUECEU A SENHA
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password/forgot'),
-      headers:<String, String>{'Content-Type': 'application/json; charset=UTF-8'},
+      headers:<String, String>{'Content-Type': 'application/json; charset=UTF-8','ngrok-skip-browser-warning': 'true'},
       body: jsonEncode(<String, String>{'email': email}),
     );
 
@@ -306,6 +372,7 @@ class AuthService {
       Uri.parse('$baseUrl/auth/password/reset'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'ngrok-skip-browser-warning': 'true'
       },
       body: jsonEncode(<String, String>{
         'reset_token': resetToken,
@@ -357,20 +424,25 @@ class AuthService {
   // MÉTODOS DE PERFIL E WALLET
   // ----------------------------------------------------------------------
   
-  // NOVO MÉTODO: Obtém o perfil do usuário logado (GET /auth/me)
+  // GET /auth/me
   Future<Map<String, dynamic>> getUserProfile() async {
     final responseData = await _secureGet('auth/me');
     return responseData['data'] as Map<String, dynamic>? ?? {}; 
   }
-  
+
+  //(PUT /auth/profile)
+  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> profileData) async {
+    final responseData = await _securePut('auth/profile', body: profileData);
+    return responseData;
+  }
   // 1. Obtém os detalhes da carteira (GET /wallet/my-wallet)
   Future<Map<String, dynamic>> getWalletDetails() async {
     try {
       final responseData = await _secureGet('wallet/my-wallet');
       
-      // CASO A: API envia o status de "não tem carteira"
-      if (responseData.containsKey('has_wallet')) {
-         return responseData; // Retorna {"has_wallet": false, ...}
+      
+      if (responseData['data'] != null && responseData['data']['has_wallet'] == false) {
+         return responseData['data']; // Retorna {"has_wallet": false}
       }
       
       // CASO B: API envia os detalhes da carteira (Carteira existe).
@@ -498,5 +570,11 @@ class AuthService {
       } catch (_) {}
       throw Exception('Falha na requisição DELETE. Status: ${response.statusCode}');
     }
+  }
+
+  Future<Map<String, dynamic>> getProviderQuickStats() async {
+    final responseData = await _secureGet('api/provider/dashboard/quick-stats');
+    
+    return responseData['data'] as Map<String, dynamic>? ?? {};
   }
 }
