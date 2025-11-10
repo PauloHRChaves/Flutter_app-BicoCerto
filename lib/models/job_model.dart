@@ -135,11 +135,11 @@ class Job {
       acceptedAt: json['accepted_at']?.toString() ?? '',
       completedAt: json['completed_at']?.toString() ?? '',
       category: json['service_type']?.toString() ?? '',
-      proposalCount: _parseInt(json['proposal_count']),
+      proposalCount: _parseInt(json['pending_proposal_count']),
       proposalEstimatedTimeDays: _parseInt(json['accepted_proposal']?['estimatedTime']),
       metadata: JobMetadata.fromJson(json['metadata'] ?? {}),
       ipfsCid: json['ipfs_hash']?.toString() ?? '',
-      status: JobStatus.fromString(json['status']?.toString() ?? 'none'), // NOVO CAMPO
+      status: JobStatus.fromString(json['status']?.toString() ?? 'none'),
     );
   }
 

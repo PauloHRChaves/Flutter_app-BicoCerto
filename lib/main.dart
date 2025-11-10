@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bico_certo/pages/job/job_details_page.dart';
 import 'package:bico_certo/services/job_service.dart';
+import 'package:bico_certo/services/job_state_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/local_storage_service.dart';
 import 'package:bico_certo/routes.dart';
@@ -240,6 +241,13 @@ class _MyAppState extends State<MyApp> {
             final jobId = message.data['job_id'];
 
             if (jobId == null) {
+              return;
+            }
+
+            final jobState = JobStateService();
+            final isViewingJob = jobState.isViewingJob(jobId);
+
+            if (isViewingJob) {
               return;
             }
 
