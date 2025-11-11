@@ -2,6 +2,7 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/services/job_service.dart';
+import 'package:bico_certo/pages/job/job_details_page.dart';
 
 class JobsListPage extends StatefulWidget {
   final String? category;
@@ -400,7 +401,7 @@ class _JobsListPageState extends State<JobsListPage> {
                 padding: const EdgeInsets.all(16),
                 itemCount: _filteredJobs.length,
                 itemBuilder: (context, index) {
-                  return JobCard(job: _filteredJobs[index]);
+                  return JobCard(job: _filteredJobs[index], onUpdate: _loadJobs);
                 },
               ),
             ),
@@ -817,8 +818,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 
 class JobCard extends StatelessWidget {
   final Job job;
+  final VoidCallback? onUpdate;
 
-  const JobCard({super.key, required this.job});
+  const JobCard({super.key, required this.job, this.onUpdate});
 
   @override
   Widget build(BuildContext context) {
@@ -831,7 +833,17 @@ class JobCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => JobDetailsPage(job: job),
+            ),
+          );
+
+          if (result == true && onUpdate != null) {
+            onUpdate!();
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

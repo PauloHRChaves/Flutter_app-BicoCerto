@@ -92,6 +92,8 @@ class AuthService {
       Uri.parse('$baseUrl/$endpoint'),
       headers: <String, String>{
         'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+
       },
     );
 
@@ -118,6 +120,7 @@ class AuthService {
     final Map<String, String> headers = {
       'Content-Type': 'application/json; charset=UTF-8',
       'Authorization': 'Bearer $token',
+      'ngrok-skip-browser-warning': 'true',
     };
 
     final response = await http.post(
@@ -245,16 +248,16 @@ class AuthService {
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password/forgot'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
+      headers:<String, String>{'Content-Type': 'application/json; charset=UTF-8'},
       body: jsonEncode(<String, String>{'email': email}),
     );
+
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final data = json.decode(response.body);
+      return data;
     } else {
-      Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception(jsonResponse['detail'] ?? 'Falha ao solicitar redefinição.');
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Falha ao solicitar redefinição.');
     }
   }
 

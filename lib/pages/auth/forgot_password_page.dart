@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/pages/auth/reset_password_page.dart';
-import 'package:bico_certo/widgets/wave_clipper.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -20,7 +19,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       _isLoading = true;
     });
     try {
-      await _authService.forgotPassword(email: _emailController.text);
+      final response = await _authService.forgotPassword(
+        email: _emailController.text,
+      );
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -29,9 +31,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
       );
 
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
-      );
+      // pega o token retornado, se existir
+      final resetToken = response['data']?['reset_token'];
+
+      if (resetToken != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ResetPasswordPage(token: resetToken),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -61,26 +70,23 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       appBar: AppBar(
         backgroundColor: darkBlue,
         elevation: 1,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Color.fromARGB(255, 255, 255, 255),
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text(
           "Esqueceu a senha",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
 
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Transform.translate(
-              offset: const Offset(0, -120.0),
-              child: ClipPath(
-                clipper: WaveClipper(),
-                child: Container(color: darkBlue),
-              ),
-            ),
-          ),
-
           Padding(
-            padding: const EdgeInsets.all(40),
+            padding: const EdgeInsets.all(30),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -94,7 +100,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: const InputDecoration(
+                    labelText: 'Digite seu Email',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 15,
+                    ),
+                  ),
                   keyboardType: TextInputType.emailAddress,
                 ),
 

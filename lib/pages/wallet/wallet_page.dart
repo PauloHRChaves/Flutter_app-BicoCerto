@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:bico_certo/services/auth_service.dart';
-import 'package:bico_certo/widgets/bottom_navbar.dart';
 import 'package:bico_certo/routes.dart';
 
 // --- CONSTANTES DE NÍVEL SUPERIOR ---
@@ -16,7 +15,12 @@ const Color lightGreyText = Color.fromARGB(255, 97, 97, 97);
 const Color darkContrastColor = Color.fromARGB(255, 18, 18, 18);
 
 // --- Função Auxiliar Definida FORA da Classe (para os botões) ---
-Widget _buildWalletActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+Widget _buildWalletActionButton(
+  IconData icon,
+  String label,
+  Color color,
+  VoidCallback onTap,
+) {
   return InkWell(
     onTap: onTap,
     child: Column(
@@ -100,9 +104,9 @@ class _WalletPageState extends State<WalletPage> {
     // Executa a lógica de exclusão com a senha.
     try {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Excluindo carteira...')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Excluindo carteira...')));
 
       // Chama o método de deleção na API
       await _authService.deleteWallet(password: password);
@@ -110,12 +114,18 @@ class _WalletPageState extends State<WalletPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Carteira excluída com sucesso!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Carteira excluída com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       // Navega para a tela de checagem de sessão e remove todas as telas anteriores
       Navigator.pushNamedAndRemoveUntil(
-          context, AppRoutes.sessionCheck, (route) => false);
+        context,
+        AppRoutes.sessionCheck,
+        (route) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +155,10 @@ class _WalletPageState extends State<WalletPage> {
               },
             ),
             TextButton(
-              child: const Text('Sim, continuar', style: TextStyle(color: Colors.red)),
+              child: const Text(
+                'Sim, continuar',
+                style: TextStyle(color: Colors.red),
+              ),
               onPressed: () {
                 Navigator.of(context).pop(true); // Retorna 'true'
               },
@@ -156,53 +169,81 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
+  InputDecoration _inputDecorationPass(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
+
   /// 3. Mostra o SEGUNDO pop-up (senha)
   Future<String?> _showPasswordDialogForDeletion() {
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    bool passwordVisible = false;
 
     return showDialog<String>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirmação de Segurança'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Digite sua senha'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'A senha é obrigatória.';
-                }
-                return null;
-              },
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancelar'),
-              onPressed: () {
-                Navigator.of(context).pop(null); // Retorna nulo
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Excluir Definitivamente'),
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  // Apenas retorna a senha, a lógica de API está em _handleDeleteWallet
-                  Navigator.of(context).pop(passwordController.text);
-                }
-              },
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text(
+                'Confirmação de Segurança',
+                style: TextStyle(fontSize: 20),
+              ),
+              content: Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: passwordController,
+                  obscureText: !passwordVisible,
+                  decoration: _inputDecorationPass('Senha').copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        passwordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          passwordVisible = !passwordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  validator: (value) =>
+                      value!.isEmpty ? 'A senha é obrigatória' : null,
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                  onPressed: () {
+                    Navigator.of(context).pop(null); // Retorna nulo
+                  },
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text(
+                    'Excluir Definitivamente',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      // Apenas retorna a senha, a lógica de API está em _handleDeleteWallet
+                      Navigator.of(context).pop(passwordController.text);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
-  
+
   // =============================================================
   // --- FIM DO FLUXO DE DELEÇÃO ---
   // =============================================================
@@ -216,10 +257,7 @@ class _WalletPageState extends State<WalletPage> {
       if (details.containsKey('has_wallet') && details['has_wallet'] == false) {
         if (mounted) {
           // Redireciona para a página de criação, substituindo a rota atual
-          Navigator.pushReplacementNamed(
-            context,
-            AppRoutes.createWalletPage,
-          );
+          Navigator.pushReplacementNamed(context, AppRoutes.createWalletPage);
         }
       } else {
         // Se já tem carteira, carrega os dados e inicia o polling
@@ -232,10 +270,13 @@ class _WalletPageState extends State<WalletPage> {
         setState(() {
           _balance = "Erro de API";
           _isLoading = false;
-          _isHistoryLoading = false; // Garante que o indicador de histórico para
+          _isHistoryLoading =
+              false; // Garante que o indicador de histórico para
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro de autenticação ou conexão: ${e.toString()}')),
+          SnackBar(
+            content: Text('Erro de autenticação ou conexão: ${e.toString()}'),
+          ),
         );
       }
     }
@@ -245,8 +286,10 @@ class _WalletPageState extends State<WalletPage> {
   void _startPolling() {
     _timer?.cancel();
 
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _fetchWalletData(showLoading: false); // Não exibe loading spinner nas atualizações automáticas
+    _timer = Timer.periodic(const Duration(seconds: 240), (timer) {
+      _fetchWalletData(
+        showLoading: false,
+      ); // Não exibe loading spinner nas atualizações automáticas
     });
   }
 
@@ -291,7 +334,10 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   /// Centraliza a lógica de atualização do estado com os dados recebidos da API.
-  void _updateStateWithData(Map<String, dynamic> balanceData, List<Map<String, dynamic>> transactionData) {
+  void _updateStateWithData(
+    Map<String, dynamic> balanceData,
+    List<Map<String, dynamic>> transactionData,
+  ) {
     // Garante que o widget ainda está na árvore antes de atualizar o estado
     if (!mounted) return;
 
@@ -308,7 +354,8 @@ class _WalletPageState extends State<WalletPage> {
     // 3. Atualiza o estado da tela com os valores formatados.
     setState(() {
       // Saldo
-      _balance = "R\$ ${balanceInETH.toStringAsFixed(2).replaceAll('.', ',')} BRL";
+      _balance =
+          "R\$ ${balanceInETH.toStringAsFixed(2).replaceAll('.', ',')} BRL";
 
       // Endereço
       _fullAddress = fullAddress;
@@ -320,15 +367,78 @@ class _WalletPageState extends State<WalletPage> {
       _transactions = transactionData;
     });
   }
+
   // --- LÓGICA DE COPIAR ---
   /// Copia o endereço completo da carteira para a área de transferência.
   void _copyToClipboard() {
     if (_fullAddress.isNotEmpty && _fullAddress != "0x000...000") {
       Clipboard.setData(ClipboardData(text: _fullAddress));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Endereço copiado!')),
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Endereço copiado!')));
+    }
+  }
+
+  // Certifique-se de que este método está dentro da sua classe StatefulWidget
+  Widget _buildTransactionList({required String filterType}) {
+    final filteredTransactions = _transactions
+        .where((tx) => tx['type'] == filterType)
+        .toList();
+
+    if (_isHistoryLoading) {
+      return const Center(child: CircularProgressIndicator(color: primaryBlue));
+    }
+
+    if (filteredTransactions.isEmpty) {
+      return Center(
+        child: Text(
+          filterType == 'receive'
+              ? "Nenhum valor recebido encontrado."
+              : "Nenhuma transferência enviada encontrada.",
+          style: const TextStyle(color: Colors.grey, fontSize: 18),
+        ),
       );
     }
+
+    return ListView.builder(
+      itemCount: filteredTransactions.length,
+      itemBuilder: (context, index) {
+        final tx = filteredTransactions[index];
+
+        final bool isSend = tx['type'] == 'send';
+        final icon = isSend ? Icons.arrow_upward : Icons.arrow_downward;
+        final color = isSend ? Colors.red : Colors.green;
+
+        final String otherPartyAddress =
+            (isSend ? tx['to'] : tx['from']) ?? "Endereço Desconhecido";
+
+        final displayAddress = otherPartyAddress.length > 10
+            ? '${otherPartyAddress.substring(0, 6)}...${otherPartyAddress.substring(otherPartyAddress.length - 4)}'
+            : otherPartyAddress;
+
+        final value = double.tryParse(tx['value']?.toString() ?? '0') ?? 0.0;
+        final formattedValue =
+            "R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}";
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withOpacity(0.1),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          title: Text(
+            isSend ? 'Transferência Enviada' : 'Valor Recebido',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            isSend ? 'Para: $displayAddress' : 'De: $displayAddress',
+          ),
+          trailing: Text(
+            (isSend ? '- ' : '+ ') + formattedValue,
+            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -342,41 +452,69 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     return Scaffold(
-      backgroundColor: lightBackground,
+      backgroundColor: const Color.fromARGB(255, 237, 237, 237),
       appBar: AppBar(
-        backgroundColor: lightBackground,
+        backgroundColor: Color.fromARGB(255, 15, 73, 131),
         elevation: 1,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Color.fromARGB(255, 255, 255, 255),
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: GestureDetector(
           onTap: _copyToClipboard,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.account_balance_wallet, color: primaryBlue, size: 24),
-              const SizedBox(width: 8),
-              Text(_displayAddress, style: const TextStyle(color: darkText, fontSize: 18)),
-              const Icon(Icons.copy, color: lightGreyText, size: 16),
+              const Icon(
+                Icons.account_balance_wallet,
+                color: Color.fromARGB(255, 255, 255, 255),
+                size: 24,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                _displayAddress,
+                style: const TextStyle(
+                  color: Color.fromARGB(255, 239, 239, 239),
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.copy,
+                color: Color.fromARGB(255, 255, 255, 255),
+                size: 16,
+              ),
             ],
           ),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.qr_code_scanner, color: darkText), onPressed: () {
-            // TODO: Implementar navegação para a tela de QR Code
-          }),
+          IconButton(
+            icon: const Icon(
+              Icons.qr_code_scanner,
+              color: Color.fromARGB(255, 255, 255, 255),
+            ),
+            onPressed: () {
+              // TODO: Implementar navegação para a tela de QR Code
+            },
+          ),
           // Ícone de Lixeira para exclusão da carteira
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Color.fromARGB(255, 255, 68, 54),
+            ),
             onPressed: _handleDeleteWallet, // <<< CHAMA O FLUXO DE DELEÇÃO
           ),
+
+          const SizedBox(width: 8),
         ],
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: darkText),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ),
       body: DefaultTabController(
         length: 2,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -385,11 +523,29 @@ class _WalletPageState extends State<WalletPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: 30),
-                    Text(
-                      _balance,
-                      style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: darkText),
+
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 255, 255, 255),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+
+                      child: Column(
+                        children: [
+                          Text(
+                            _balance,
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: darkText,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 8),
+
                     // Botão de "Portfolio"
                     TextButton(
                       onPressed: () {
@@ -397,7 +553,10 @@ class _WalletPageState extends State<WalletPage> {
                       },
                       child: const Text(
                         "+\$0 (0.00%) Portfolio >",
-                        style: TextStyle(color: Colors.greenAccent, fontSize: 16),
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 45, 138, 93),
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -409,110 +568,74 @@ class _WalletPageState extends State<WalletPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildWalletActionButton(Icons.arrow_upward, "Enviar", primaryBlue, () => _navigateTo(AppRoutes.sendPage)),
-                  _buildWalletActionButton(Icons.arrow_downward, "Receber", primaryBlue, () => _navigateTo(AppRoutes.receivePage)),
+                  _buildWalletActionButton(
+                    Icons.arrow_upward,
+                    "Enviar",
+                    primaryBlue,
+                    () => _navigateTo(AppRoutes.sendPage),
+                  ),
+                  _buildWalletActionButton(
+                    Icons.arrow_downward,
+                    "Receber",
+                    primaryBlue,
+                    () => _navigateTo(AppRoutes.receivePage),
+                  ),
                 ],
               ),
-              const SizedBox(height: 30),
 
-              // --- Abas (Saldo e Histórico) ---
-              const TabBar(
-                indicatorColor: primaryBlue,
-                labelColor: darkText,
-                unselectedLabelColor: lightGreyText,
-                tabs: [
-                  Tab(text: "Saldo"),
-                  Tab(text: "Histórico"),
-                ],
-              ),
-              // Conteúdo das Abas
-              SizedBox(
-                height: 400, // Altura fixa para o TabBarView
-                child: TabBarView(
+              const SizedBox(height: 40),
+
+              Center(
+                child: Column(
                   children: [
-                    // Conteúdo da aba Saldo (Lista de Ativos)
-                    Center(
-                      child: ListTile(
-                        leading: const CircleAvatar(radius: 18, backgroundColor: Colors.yellow, child: Text("B", style: TextStyle(color: darkContrastColor))),
-                        title: const Text("BRL", style: TextStyle(color: darkText, fontWeight: FontWeight.bold)),
-                        trailing: Text(_balance, style: const TextStyle(color: darkText)),
-                        subtitle: const Text("Bico Certo", style: TextStyle(color: lightGreyText)),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 255, 255, 255),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Histórico de Transações',
+                            style: TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.w600,
+                              color: Color.fromARGB(255, 39, 39, 39),
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          const TabBar(
+                            indicatorColor: primaryBlue,
+                            labelColor: darkText,
+                            unselectedLabelColor: lightGreyText,
+                            tabs: [
+                              Tab(text: "Recebido"),
+                              Tab(text: "Enviado"),
+                            ],
+                          ),
+                          // Conteúdo das Abas
+                          SizedBox(
+                            height: 400,
+                            child: TabBarView(
+                              children: [
+                                _buildTransactionList(filterType: 'receive'),
+                                _buildTransactionList(filterType: 'send'),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    // --- ABA HISTÓRICO (SUBSTITUIÇÃO) ---
-                    _isHistoryLoading
-                        ? const Center(child: CircularProgressIndicator(color: primaryBlue))
-                        : _transactions.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  "Nenhuma transação encontrada.",
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              )
-                            : ListView.builder(
-                                itemCount: _transactions.length,
-                                itemBuilder: (context, index) {
-                                  final tx = _transactions[index];
-
-                                  // Determina se a transação é de envio ou recebimento
-                                  // NOTE: O 'type' deve vir da sua API, assumindo 'send' ou 'receive'
-                                  final bool isSend = tx['type'] == 'send';
-
-                                  // Define ícone e cor com base no tipo
-                                  final icon = isSend ? Icons.arrow_upward : Icons.arrow_downward;
-                                  final color = isSend ? Colors.red : Colors.green;
-
-                                  // Pega o endereço da outra parte na transação
-                                  final otherPartyAddress = isSend ? tx['to'] : tx['from'] ?? "Endereço Desconhecido";
-                                  final displayAddress = otherPartyAddress.length > 10
-                                      ? '${otherPartyAddress.substring(0, 6)}...${otherPartyAddress.substring(otherPartyAddress.length - 4)}'
-                                      : otherPartyAddress;
-
-                                  // Formata o valor da transação (assumindo que o 'value' já vem em BRL)
-                                  final value = double.tryParse(tx['value']?.toString() ?? '0') ?? 0.0;
-                                  final formattedValue = "R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}";
-
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: color.withOpacity(0.1),
-                                      child: Icon(icon, color: color, size: 20),
-                                    ),
-                                    title: Text(
-                                      isSend ? 'Transferência Enviada' : 'Valor Recebido',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    subtitle: Text(isSend ? 'Para: $displayAddress' : 'De: $displayAddress'),
-                                    trailing: Text(
-                                      (isSend ? '- ' : '+ ') + formattedValue,
-                                      style: TextStyle(
-                                        color: color,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
                   ],
                 ),
               ),
             ],
           ),
         ),
-      ),
-      // --- BARRA DE NAVEGAÇÃO CUSTOMIZADA ---
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.sessionCheck, (route) => route.isFirst);
-          } else if (index == 1) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.ordersPage, (route) => route.isFirst);
-          } else if (index == 2) {
-            // Já estamos na Carteira (índice 2)
-          } else if (index == 3) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profilePage, (route) => route.isFirst);
-          }
-        },
       ),
     );
   }

@@ -1,5 +1,6 @@
 // ⚠️ ESTA PAGINA DEVE SER VISIVEL APENAS PELO DONO DA MESMA ⚠️
 
+import 'package:bico_certo/pages/dashboard/client_dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 import 'package:bico_certo/routes.dart';
@@ -7,6 +8,8 @@ import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/services/auth_guard.dart';
 import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/pages/wallet/create_wallet_page.dart';
+
+import '../dashboard/provider_dashboard_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -231,7 +234,6 @@ class _SetProfileState extends State<ProfilePage> {
     final double fonttitle = screenWidth * 0.044;
     final double font = screenWidth * 0.042;
 
-    const Color darkBlue = Color.fromARGB(255, 25, 118, 210);
     const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
     const Color lightBackground = Color.fromARGB(255, 230, 230, 230);
     const Color darkText = Color.fromARGB(255, 30, 30, 30);
@@ -240,10 +242,13 @@ class _SetProfileState extends State<ProfilePage> {
     return AuthGuard(
       child: Scaffold(
         backgroundColor: lightBackground,
-
         appBar: AppBar(
-          backgroundColor: darkBlue,
+          backgroundColor: Color.fromARGB(255, 15, 73, 131),
           elevation: 1,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
           title: const Text(
             "Meu Perfil",
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -415,11 +420,21 @@ class _SetProfileState extends State<ProfilePage> {
                     _buildActionButton(
                       context: context,
                       icon: Icons.account_balance_wallet_outlined,
-                      label: "Wallet",
-                      onTap: _checkAndNavigateToWallet,
-                    ),
+                      label: "Carteira",
+                      onTap:() => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProviderDashboardPage(),
+                        ),
+                      )),
                     //⚠️ Aplicar Logica
-                    _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY"),
+                    _buildActionButton(context: context, icon: Icons.handshake_outlined, label: "YYY",
+                        onTap:() => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ClientDashboardPage(),
+                        ),
+                      )),
                     _buildActionButton(context: context, icon: Icons.settings_outlined, label: "YYY"),
                     _buildActionButton(context: context, icon: Icons.headset_mic_outlined, label: "YYY"),
                   ],
@@ -492,34 +507,6 @@ class _SetProfileState extends State<ProfilePage> {
               ),
             ),
             SizedBox(height: screenHeight * 0.01),
-
-            // --- Histórico de Serviços ---
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    "Histórico de Serviços",
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: darkText,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Text(
-                    // ⚠️ ->  ADICIONAR JOBS CONCLUIDOS
-                    "Lista de trabalhos concluídos (Implementar aqui).",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
 
