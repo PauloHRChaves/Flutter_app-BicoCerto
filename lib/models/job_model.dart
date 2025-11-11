@@ -95,6 +95,7 @@ class Job {
   final String providerAddress;
   final String providerName;
   final double maxBudget;
+  final String createdAt;
   final String acceptedAt;
   final String completedAt;
   final String deadline;
@@ -103,7 +104,7 @@ class Job {
   final int proposalEstimatedTimeDays;
   final JobMetadata metadata;
   final String ipfsCid;
-  final JobStatus status; // NOVO CAMPO
+  final JobStatus status;
 
   Job({
     required this.jobId,
@@ -112,6 +113,7 @@ class Job {
     required this.providerAddress,
     required this.providerName,
     required this.maxBudget,
+    required this.createdAt,
     required this.acceptedAt,
     required this.completedAt,
     required this.deadline,
@@ -120,7 +122,7 @@ class Job {
     required this.proposalEstimatedTimeDays,
     required this.metadata,
     required this.ipfsCid,
-    required this.status, // NOVO CAMPO
+    required this.status,
   });
 
   factory Job.fromJson(Map<String, dynamic> json) {
@@ -132,6 +134,7 @@ class Job {
       providerName: json['accepted_proposal']?['provider']['name'].toString() ?? '',
       maxBudget: _parseDouble(json['max_budget']),
       deadline: json['deadline']?.toString() ?? '',
+      createdAt: json['created_at']?.toString() ?? '',
       acceptedAt: json['accepted_at']?.toString() ?? '',
       completedAt: json['completed_at']?.toString() ?? '',
       category: json['service_type']?.toString() ?? '',
@@ -143,7 +146,35 @@ class Job {
     );
   }
 
-  // Helper para converter qualquer valor para double
+  DateTime get lastUpdatedAt {
+    final dates = <DateTime>[];
+
+    if (createdAt.isNotEmpty) {
+      try {
+        dates.add(DateTime.parse(createdAt));
+      } catch (_) {}
+    }
+
+    if (acceptedAt.isNotEmpty) {
+      try {
+        dates.add(DateTime.parse(acceptedAt));
+      } catch (_) {}
+    }
+
+    if (completedAt.isNotEmpty) {
+      try {
+        dates.add(DateTime.parse(completedAt));
+      } catch (_) {}
+    }
+
+    if (dates.isEmpty) {
+      return DateTime.now();
+    }
+
+    dates.sort((a, b) => b.compareTo(a));
+    return dates.first;
+  }
+
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -154,7 +185,6 @@ class Job {
     return 0.0;
   }
 
-  // Helper para converter qualquer valor para int
   static int _parseInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -165,7 +195,6 @@ class Job {
     return 0;
   }
 
-  // NOVOS MÉTODOS ÚTEIS
   bool get isOpen => status == JobStatus.open;
   bool get isAccepted => status == JobStatus.accepted;
   bool get isInProgress => status == JobStatus.inProgress;
@@ -175,10 +204,8 @@ class Job {
   bool get isDisputed => status == JobStatus.disputed;
   bool get isRefunded => status == JobStatus.refunded;
 
-  // Verifica se o job está ativo (aceita propostas)
   bool get isActive => status == JobStatus.open || status == JobStatus.created;
 
-  // Verifica se o job está finalizado
   bool get isFinished =>
       status == JobStatus.approved ||
           status == JobStatus.cancelled ||
