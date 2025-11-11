@@ -492,7 +492,7 @@ class _SetProfileState extends State<ProfilePage> {
                           _buildActionButton(
                             context: context,
                             icon: Icons.dashboard_outlined, // Ícone de Dashboard
-                            label: "Dashboard Cliente",
+                            label: "Dash Cliente",
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -504,7 +504,7 @@ class _SetProfileState extends State<ProfilePage> {
                           _buildActionButton(
                             context: context,
                             icon: Icons.dashboard, // Ícone de Engrenagem
-                            label: "Dashboard Provider",
+                            label: "Dash Provider",
                               onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
