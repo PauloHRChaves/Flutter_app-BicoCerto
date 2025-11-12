@@ -360,6 +360,8 @@ class AuthService {
   // ----------------------------------------------------------------------
   // MÉTODOS CRIAÇÃO DE TRABALHO
   // ----------------------------------------------------------------------
+  
+  // CONVERSÃO DE BYTES PARA BASE64
   Future<String>_encodeFileToBase64(File file) async {
 
     List<int> bytes = await file.readAsBytes();
@@ -379,6 +381,7 @@ class AuthService {
   }) async {
 
 
+    // ISOLAMENTO DE PROCESSO
     List<Future<String>> encodingFutures = images.map((file) {
         // 💡 Chama a função no Isolate
         return compute(_encodeFileToBase64, file); 
@@ -394,7 +397,7 @@ class AuthService {
       'category': category,
       'location': location,
       'deadline': deadline,
-      'images': listItemsB64,
+      'job_images': listItemsB64,
       'max_budget_eth': budget,
       'password': password,
     };

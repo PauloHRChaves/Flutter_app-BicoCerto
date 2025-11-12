@@ -7,6 +7,7 @@ import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:bico_certo/services/auth_guard.dart';
 import 'package:bico_certo/widgets/password_request.dart';
 import 'package:bico_certo/widgets/photo_createjob.dart';
 import '../../models/location_suggestion.dart';
@@ -14,76 +15,6 @@ import '../../services/location_service.dart';
 import '../../widgets/location_field_with_map.dart';
 
 
-class PhotoInputWidget extends StatelessWidget {
-
-
-  final List<String> photoUrls;
-  final VoidCallback onAddPhoto;
-
-  const PhotoInputWidget({
-    super.key,
-    required this.photoUrls,
-    required this.onAddPhoto,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Fotos (Opcional)", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: photoUrls.length + 1, // +1 para o botão de adicionar
-            itemBuilder: (context, index) {
-              if (index == photoUrls.length) {
-                // Botão de Adicionar Foto
-                return GestureDetector(
-                  onTap: onAddPhoto,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade400, width: 1.5),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_a_photo, color: Colors.grey, size: 30),
-                        SizedBox(height: 4),
-                        Text("Adicionar", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              // Exibição das Fotos (Simulação com Placeholders)
-              return Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    photoUrls[index],
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class CurrencyInputFormatter extends TextInputFormatter {
 
@@ -151,6 +82,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
   String? _selectedCategory; // Estado da Categoria (Dropdown)
   String _selectedDateFormated = '';
+  DateTime? _selectedDate;
 
   double? _selectedLatitude;
   double? _selectedLongitude;
@@ -358,79 +290,81 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Criar Novo Pedido'),
-        backgroundColor: const Color.fromARGB(255, 14, 67, 182),
-        foregroundColor: Colors.white,
-      ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título do Pedido
-            _buildTextField("Título do Pedido", _titleJobController, "Ex: Conserto de vazamento no banheiro"),
-            const SizedBox(height: 20),
-
-            // Categoria do Serviço (Dropdown)
-            _buildCategoryDropdown(),
-            const SizedBox(height: 20),
-
-            // Localização
-            LocationFieldMapOnly(
-              controller: _locationJobController,
-              onLocationSelected: _onLocationSelected,
-              onCoordinatesSelected: _onCoordinatesSelected,
-            ),
-
-            const SizedBox(height: 20),
-
-            // Descrição
-            _buildDescriptionField(),
-            const SizedBox(height: 20),
-
-            // Entrada de Fotos
-            PhotoInputWidget(
-              photoFiles: _jobPhotos, 
-              onAddPhoto: _pickImage, // Função de seleção de imagem
-              onRemovePhoto: (index) { 
-                setState(() {
-                    _jobPhotos.removeAt(index);
-                  });
-                },
-              ),
-            const SizedBox(height: 20),
-
-            // Data Estipulada de Término
-            // _buildDateField(),
-            // const SizedBox(height: 30),
-
-            _buildCurrencyFieldWithoutPackage("Valor de Proposta", _budgetController, "Ex: 150,00"),
-            const SizedBox(height: 30),
-
-            // Botão de Envio
-            Center(
-              child: ElevatedButton(
-                onPressed: (){
-                  _handleJobCreationAttempt();
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50), // Botão de largura total
-                  backgroundColor: const Color.fromARGB(255, 14, 67, 182),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text(
-                  'Publicar Pedido',
-                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+    return AuthGuard(
+        child:  Scaffold(
+        appBar: AppBar(
+          title: const Text('Criar Novo Pedido'),
+          backgroundColor: const Color.fromARGB(255, 14, 67, 182),
+          foregroundColor: Colors.white,
         ),
-      ),
+
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Título do Pedido
+              _buildTextField("Título do Pedido", _titleJobController, "Ex: Conserto de vazamento no banheiro"),
+              const SizedBox(height: 20),
+
+              // Categoria do Serviço (Dropdown)
+              _buildCategoryDropdown(),
+              const SizedBox(height: 20),
+
+              // Localização
+              LocationFieldMapOnly(
+                controller: _locationJobController,
+                onLocationSelected: _onLocationSelected,
+                onCoordinatesSelected: _onCoordinatesSelected,
+              ),
+
+              const SizedBox(height: 20),
+
+              // Descrição
+              _buildDescriptionField(),
+              const SizedBox(height: 20),
+
+              // Entrada de Fotos
+              PhotoInputWidget(
+                photoFiles: _jobPhotos, 
+                onAddPhoto: _pickImage, // Função de seleção de imagem
+                onRemovePhoto: (index) { 
+                  setState(() {
+                      _jobPhotos.removeAt(index);
+                    });
+                  },
+                ),
+              const SizedBox(height: 20),
+
+              // Data Estipulada de Término
+              // _buildDateField(),
+              // const SizedBox(height: 30),
+
+              _buildCurrencyFieldWithoutPackage("Valor de Proposta", _budgetController, "Ex: 150,00"),
+              const SizedBox(height: 30),
+
+              // Botão de Envio
+              Center(
+                child: ElevatedButton(
+                  onPressed: (){
+                    _handleJobCreationAttempt();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50), // Botão de largura total
+                    backgroundColor: const Color.fromARGB(255, 14, 67, 182),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'Publicar Pedido',
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      )
     );
   }
 

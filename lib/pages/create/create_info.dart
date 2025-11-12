@@ -60,7 +60,7 @@ class OrderInfoPage extends StatelessWidget {
 
               _buildInstructionStep(
                 number: 2,
-                title: "Defina Escopo e Prazo",
+                title: "Defina Escopo e o local",
                 description: "Selecione a Categoria correta, informe a Localização e escolha uma Data de Término estipulada. Isso ajuda o profissional a calcular o tempo e o deslocamento.",
                 primaryColor: primaryColor,
               ),
@@ -68,8 +68,8 @@ class OrderInfoPage extends StatelessWidget {
 
               _buildInstructionStep(
                 number: 3,
-                title: "Anexe Fotos",
-                description: "Adicionar fotos da área ou do problema é crucial. Profissionais conseguem avaliar a complexidade do serviço e enviar orçamentos mais precisos.",
+                title: "Anexe Fotos e um Valor Mínimo",
+                description: "Adicionar fotos da área ou do problema é crucial. Profissionais conseguem avaliar a complexidade do serviço e enviar orçamentos mais precisos. Você também pode definir um valor mínimo para a proposta. .",
                 primaryColor: primaryColor,
               ),
 
