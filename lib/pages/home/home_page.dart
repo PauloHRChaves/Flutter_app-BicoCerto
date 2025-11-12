@@ -91,17 +91,6 @@ class _HomePageState extends State<HomePage> {
   void _performSearch() {
     final searchTerm = _searchController.text.trim();
 
-    if (searchTerm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Digite algo para buscar'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // Navega para a lista de jobs com o termo de busca
     Navigator.pushNamed(
       context,
       AppRoutes.jobsList,

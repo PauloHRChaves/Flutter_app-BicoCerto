@@ -46,7 +46,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   int? _minProposalCount;
   int? _maxProposalCount;
   String _jobSortBy = 'recent';
-  Set<JobStatus> _selectedJobStatuses = {JobStatus.open};
+  Set<JobStatus> _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress};
 
   final List<String> _categoryList = [
     'Reformas',
@@ -182,6 +182,10 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   void _applyJobFilters() {
     List<Job> filtered = List.from(_myJobs);
 
+    if (_selectedJobStatuses.isNotEmpty) {
+      filtered = filtered.where((job) => _selectedJobStatuses.contains(job.status)).toList();
+    }
+
     if (_selectedJobCategory != null) {
       filtered = filtered.where((job) => job.category == _selectedJobCategory).toList();
     }
@@ -203,7 +207,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
 
     switch (_jobSortBy) {
       case 'recent':
-        filtered.sort((a, b) => b.deadline.compareTo(a.deadline));
+        filtered.sort((a, b) => b.lastUpdatedAt.compareTo(a.lastUpdatedAt));
         break;
       case 'budget_asc':
         filtered.sort((a, b) => a.maxBudget.compareTo(b.maxBudget));
@@ -215,7 +219,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         filtered.sort((a, b) => a.proposalCount.compareTo(b.proposalCount));
         break;
       case 'proposals_desc':
-        filtered.sort((a, b) => b.proposalCount.compareTo(a.proposalCount));
+        filtered.sort((a, b) => b.proposalCount.compareTo(b.proposalCount));
         break;
     }
 
@@ -276,6 +280,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _JobFilterBottomSheet(
+        selectedStatuses: _selectedJobStatuses,
         selectedCategory: _selectedJobCategory,
         minBudget: _minJobBudget,
         maxBudget: _maxJobBudget,
@@ -283,8 +288,9 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         maxProposalCount: _maxProposalCount,
         sortBy: _jobSortBy,
         categories: _categoryList,
-        onApply: (category, minBudget, maxBudget, minProposals, maxProposals, sortBy) {
+        onApply: (statuses, category, minBudget, maxBudget, minProposals, maxProposals, sortBy) {
           setState(() {
+            _selectedJobStatuses = statuses;
             _selectedJobCategory = category;
             _minJobBudget = minBudget;
             _maxJobBudget = maxBudget;
@@ -297,6 +303,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         },
         onClear: () {
           setState(() {
+            _selectedJobStatuses = {JobStatus.open};
             _selectedJobCategory = null;
             _minJobBudget = null;
             _maxJobBudget = null;
@@ -322,6 +329,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
 
   int _getActiveJobFilterCount() {
     int count = 0;
+    if (_selectedJobStatuses.length != 1 || !_selectedJobStatuses.contains(JobStatus.open)) count++;
     if (_selectedJobCategory != null) count++;
     if (_minJobBudget != null) count++;
     if (_maxJobBudget != null) count++;
@@ -460,16 +468,16 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
                   proposal: _filteredProposals[index],
                   onUpdate: _loadMyProposals,
                   onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => JobDetailsPage(job: Job.fromJson(_filteredProposals[index]['job'])),
-                        ),
-                      );
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => JobDetailsPage(job: Job.fromJson(_filteredProposals[index]['job'])),
+                      ),
+                    );
 
-                      if (result == true) {
-                        _loadMyProposals();
-                      }
+                    if (result == true) {
+                      _loadMyProposals();
+                    }
                   },
                 );
               },
@@ -575,11 +583,24 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         spacing: 8,
         runSpacing: 8,
         children: [
+          if (_selectedJobStatuses.length != 1 || !_selectedJobStatuses.contains(JobStatus.open))
+            Chip(
+              avatar: const Icon(Icons.filter_alt, size: 18),
+              label: Text('${_selectedJobStatuses.length} status'),
+              backgroundColor: Colors.purple.shade50,
+              deleteIcon: const Icon(Icons.close, size: 18),
+              onDeleted: () {
+                setState(() {
+                  _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress};
+                });
+                _applyJobFilters();
+              },
+            ),
           if (_selectedJobCategory != null)
             Chip(
               avatar: const Icon(Icons.category, size: 18),
               label: Text(_selectedJobCategory!),
-              backgroundColor: Colors.blue[50],
+              backgroundColor: Colors.blue.shade50,
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () {
                 setState(() {
@@ -594,7 +615,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               label: Text(
                 'R\$ ${_minJobBudget?.toStringAsFixed(0) ?? '0'} - ${_maxJobBudget?.toStringAsFixed(0) ?? '∞'}',
               ),
-              backgroundColor: Colors.green[50],
+              backgroundColor: Colors.green.shade50,
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () {
                 setState(() {
@@ -610,7 +631,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               label: Text(
                 '${_minProposalCount ?? '0'} - ${_maxProposalCount ?? '∞'} propostas',
               ),
-              backgroundColor: Colors.purple[50],
+              backgroundColor: Colors.purple.shade50,
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () {
                 setState(() {
@@ -624,7 +645,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
             Chip(
               avatar: const Icon(Icons.sort, size: 18),
               label: Text(_getJobSortLabel(_jobSortBy)),
-              backgroundColor: Colors.orange[50],
+              backgroundColor: Colors.orange.shade50,
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () {
                 setState(() {
@@ -1122,6 +1143,7 @@ class _ProposalFilterBottomSheetState extends State<_ProposalFilterBottomSheet> 
 }
 
 class _JobFilterBottomSheet extends StatefulWidget {
+  final Set<JobStatus> selectedStatuses;
   final String? selectedCategory;
   final double? minBudget;
   final double? maxBudget;
@@ -1129,10 +1151,11 @@ class _JobFilterBottomSheet extends StatefulWidget {
   final int? maxProposalCount;
   final String sortBy;
   final List<String> categories;
-  final Function(String?, double?, double?, int?, int?, String) onApply;
+  final Function(Set<JobStatus>, String?, double?, double?, int?, int?, String) onApply;
   final VoidCallback onClear;
 
   const _JobFilterBottomSheet({
+    required this.selectedStatuses,
     required this.selectedCategory,
     required this.minBudget,
     required this.maxBudget,
@@ -1149,6 +1172,7 @@ class _JobFilterBottomSheet extends StatefulWidget {
 }
 
 class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
+  late Set<JobStatus> _selectedStatuses;
   late String? _selectedCategory;
   late double? _minBudget;
   late double? _maxBudget;
@@ -1161,9 +1185,17 @@ class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
   final TextEditingController _minProposalController = TextEditingController();
   final TextEditingController _maxProposalController = TextEditingController();
 
+  final List<JobStatus> _allowedStatuses = [
+    JobStatus.open,
+    JobStatus.inProgress,
+    JobStatus.completed,
+    JobStatus.approved,
+  ];
+
   @override
   void initState() {
     super.initState();
+    _selectedStatuses = Set.from(widget.selectedStatuses);
     _selectedCategory = widget.selectedCategory;
     _minBudget = widget.minBudget;
     _maxBudget = widget.maxBudget;
@@ -1229,6 +1261,35 @@ class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
                 child: ListView(
                   controller: scrollController,
                   children: [
+                    const Text(
+                      'Status',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._allowedStatuses.map((status) {
+                      return CheckboxListTile(
+                        title: Text(status.displayName),
+                        subtitle: Text(
+                          _getStatusDescription(status),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        value: _selectedStatuses.contains(status),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedStatuses.add(status);
+                            } else {
+                              _selectedStatuses.remove(status);
+                            }
+                          });
+                        },
+                        activeColor: status.color,
+                      );
+                    }),
+                    const SizedBox(height: 24),
                     const Text(
                       'Categoria',
                       style: TextStyle(
@@ -1401,6 +1462,7 @@ class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
                     child: ElevatedButton(
                       onPressed: () {
                         widget.onApply(
+                          _selectedStatuses,
                           _selectedCategory,
                           _minBudget,
                           _maxBudget,
@@ -1433,6 +1495,22 @@ class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
       },
     );
   }
+
+  String _getStatusDescription(JobStatus status) {
+    switch (status) {
+      case JobStatus.open:
+        return 'Aguardando propostas';
+      case JobStatus.inProgress:
+        return 'Trabalho em andamento';
+      case JobStatus.completed:
+        return 'Aguardando aprovação';
+      case JobStatus.approved:
+        return 'Finalizado e aprovado';
+      default:
+        return '';
+    }
+  }
+
 
   Widget _buildSortOption(String value, String label, IconData icon) {
     final isSelected = _sortBy == value;
@@ -1553,7 +1631,6 @@ class ProposalCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cabeçalho com título e status da proposta
               Row(
                 children: [
                   Expanded(
@@ -1724,7 +1801,6 @@ class ProposalCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Data de envio
               Row(
                 children: [
                   Icon(
@@ -1899,7 +1975,7 @@ class JobCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'R\$ ${job.maxBudget.toStringAsFixed(2)}',
+                            'R\$ ${StringFormatter.formatAmount(job.maxBudget)}',
                             style: TextStyle(
                               fontSize: screenWidth * 0.042,
                               fontWeight: FontWeight.bold,
@@ -1910,34 +1986,34 @@ class JobCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                    if (isOpen) ...[
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => JobProposalsPage(job: job),
-                        ),
-                      );
+                  if (isOpen) ...[
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => JobProposalsPage(job: job),
+                          ),
+                        );
 
-                      if (result == true && onUpdate != null) {
-                        onUpdate!();
-                      }
-                    },
-                    icon: const Icon(Icons.list_alt, size: 16),
-                    label: const Text('Ver propostas'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 74, 58, 255),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                        if (result == true && onUpdate != null) {
+                          onUpdate!();
+                        }
+                      },
+                      icon: const Icon(Icons.list_alt, size: 16),
+                      label: const Text('Ver propostas'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 74, 58, 255),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
                     ),
-                  ),
                   ],
                 ],
               ),

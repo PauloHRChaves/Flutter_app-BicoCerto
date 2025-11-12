@@ -563,11 +563,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
           controller: controller,
           keyboardType: TextInputType.number, // Abre o teclado numérico
           inputFormatters: [
-
-            // 1. Permite apenas dígitos
             FilteringTextInputFormatter.digitsOnly,
-
-            // 2. Aplica a formatação de moeda personalizada
             CurrencyInputFormatter(),
           ],
           decoration: InputDecoration(

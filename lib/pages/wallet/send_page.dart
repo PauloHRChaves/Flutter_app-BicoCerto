@@ -1,7 +1,7 @@
-// lib/pages/wallet/send_page.dart
-
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
+
+import '../create/create_form.dart';
 
 class SendPage extends StatefulWidget {
   const SendPage({super.key});
@@ -45,7 +45,7 @@ class _SendPageState extends State<SendPage> {
 
     try {
       // Converte o valor do campo de texto para double
-      final amount = double.parse(_amountController.text.replaceAll(',', '.'));
+      final amount = double.parse((_amountController.text.replaceAll(".", "")).replaceAll(",", "."));
 
       final response = await _authService.transferEth(
         password: _passwordController.text,
@@ -64,8 +64,8 @@ class _SendPageState extends State<SendPage> {
             backgroundColor: Colors.green,
           ),
         );
-        // Retorna para a tela da carteira após o sucesso
-        Navigator.of(context).pop();
+        // Retorna para a tela da carteira após o sucesso e sinaliza para atualizar o saldo
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -138,18 +138,19 @@ class _SendPageState extends State<SendPage> {
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(
-                  labelText: 'Valor a Enviar (ETH)',
+                  labelText: 'Valor a Enviar (BRL)',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.attach_money),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  CurrencyInputFormatter(),
+                ],
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'O valor é obrigatório.';
                   }
-                  if (double.tryParse(value.replaceAll(',', '.')) == null) {
+                  if (double.tryParse((value.replaceAll(".", "")).replaceAll(",", ".")) == null) {
                     return 'Por favor, insira um número válido.';
                   }
                   return null;
@@ -188,7 +189,7 @@ class _SendPageState extends State<SendPage> {
                 ),
                 obscureText: !_passwordVisible,
                 validator: (value) =>
-                    value!.isEmpty ? 'A senha é obrigatória' : null,
+                value!.isEmpty ? 'A senha é obrigatória' : null,
               ),
 
               const SizedBox(height: 40),
@@ -207,9 +208,9 @@ class _SendPageState extends State<SendPage> {
                 label: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                        'Confirmar Envio',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                  'Confirmar Envio',
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
             ],
           ),

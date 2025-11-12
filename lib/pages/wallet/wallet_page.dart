@@ -1,33 +1,32 @@
-// lib/pages/profile/wallet_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
+import 'dart:convert';
 import 'package:bico_certo/services/auth_service.dart';
+import 'package:bico_certo/services/chat_api_service.dart';
+import 'package:bico_certo/services/wallet_state_service.dart';
 import 'package:bico_certo/routes.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
-// --- CONSTANTES DE NÍVEL SUPERIOR ---
+import '../../utils/string_formatter.dart';
+
 const Color lightBackground = Colors.white;
-// const Color cardColor = Color.fromARGB(255, 245, 245, 245); // Não utilizada
 const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
 const Color darkText = Color.fromARGB(255, 30, 30, 30);
 const Color lightGreyText = Color.fromARGB(255, 97, 97, 97);
 const Color darkContrastColor = Color.fromARGB(255, 18, 18, 18);
 
-// --- Função Auxiliar Definida FORA da Classe (para os botões) ---
 Widget _buildWalletActionButton(
-  IconData icon,
-  String label,
-  Color color,
-  VoidCallback onTap,
-) {
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+    ) {
   return InkWell(
     onTap: onTap,
     child: Column(
       children: [
         CircleAvatar(
           radius: 28,
-          // Cor do fundo do ícone é primaryBlue.withOpacity(0.2)
           backgroundColor: color.withOpacity(0.2),
           child: Icon(icon, color: primaryBlue, size: 24),
         ),
@@ -37,7 +36,6 @@ Widget _buildWalletActionButton(
     ),
   );
 }
-// --- FIM DA FUNÇÃO AUXILIAR ---
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -48,67 +46,156 @@ class WalletPage extends StatefulWidget {
 
 class _WalletPageState extends State<WalletPage> {
   final AuthService _authService = AuthService();
-  Timer? _timer;
+  final ChatApiService _chatApiService = ChatApiService();
+  final WalletStateService _walletStateService = WalletStateService();
+
+  WebSocketChannel? _websocketChannel;
+  bool _isWebSocketConnected = false;
 
   bool _isLoading = true;
   String _balance = "Carregando...";
   String _fullAddress = "";
   String _displayAddress = "Carregando...";
 
-  // --- NOVAS VARIÁVEIS DE ESTADO PARA O HISTÓRICO ---
   List<Map<String, dynamic>> _transactions = [];
   bool _isHistoryLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Inicia a checagem do status da carteira e carrega os dados ou redireciona
+    _walletStateService.setViewingWallet(true);
     _checkAndLoadWalletStatus();
   }
 
   @override
   void dispose() {
-    // Cancela o timer de polling ao sair da tela
-    _timer?.cancel();
+    _walletStateService.setViewingWallet(false);
+    _websocketChannel?.sink.close();
     super.dispose();
   }
 
-  // --- FUNÇÃO DE NAVEGAÇÃO AUXILIAR ---
-  void _navigateTo(String routeName) {
-    Navigator.pushNamed(context, routeName);
+  Future<void> _navigateTo(String routeName) async {
+    final result = await Navigator.pushNamed(context, routeName);
+
+    if (result == true && routeName == AppRoutes.sendPage) {
+      _fetchWalletData(showLoading: false);
+    }
   }
-  // ------------------------------------
+
+  Future<void> _connectWebSocket() async {
+    try {
+      _websocketChannel = await _chatApiService.connectNotificationsWebSocket();
+
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = true;
+        });
+      }
+
+      _websocketChannel!.stream.listen(
+            (message) {
+          _handleWebSocketMessage(message);
+        },
+        onError: (error) {
+          if (mounted) {
+            setState(() {
+              _isWebSocketConnected = false;
+            });
+          }
+        },
+        onDone: () {
+          if (mounted) {
+            setState(() {
+              _isWebSocketConnected = false;
+            });
+          }
+
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              _connectWebSocket();
+            }
+          });
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = false;
+        });
+      }
+    }
+  }
+
+  void _handleWebSocketMessage(dynamic message) {
+    try {
+      final data = jsonDecode(message);
+      final type = data['type'];
+
+      if (type == 'wallet_update') {
+        final updateData = data['data'];
+        final transactionType = updateData['transaction_type'];
+        final txMessage = updateData['message'];
+
+        // Mostrar SnackBar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    transactionType == 'receive'
+                        ? Icons.arrow_downward
+                        : Icons.arrow_upward,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      txMessage ?? 'Transação processada',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: transactionType == 'receive'
+                  ? Colors.green[700]
+                  : Colors.blue[700],
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+
+        _fetchWalletData(showLoading: false);
+      }
+    } catch (e) {
+      print('❌ Erro ao processar mensagem WebSocket: $e');
+    }
+  }
 
   // =============================================================
-  // --- FLUXO DE DELEÇÃO (Com dois pop-ups e API Call) ---
+  // FLUXO DE DELEÇÃO (mantido igual)
   // =============================================================
 
-  /// 1. Função principal que inicia o fluxo de deleção
   Future<void> _handleDeleteWallet() async {
-    // Mostra o primeiro diálogo de confirmação.
     final bool? confirmed = await _showDeleteConfirmationDialog();
 
-    // Se o usuário não confirmou, encerra a função.
     if (confirmed != true) {
       return;
     }
 
-    // Se confirmou, mostra o segundo diálogo para coletar a senha.
     final String? password = await _showPasswordDialogForDeletion();
 
-    // Se a senha não foi fornecida, encerra a função.
     if (password == null || password.isEmpty) {
       return;
     }
 
-    // Executa a lógica de exclusão com a senha.
     try {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Excluindo carteira...')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Excluindo carteira...'))
+      );
 
-      // Chama o método de deleção na API
       await _authService.deleteWallet(password: password);
 
       if (!mounted) return;
@@ -120,11 +207,10 @@ class _WalletPageState extends State<WalletPage> {
         ),
       );
 
-      // Navega para a tela de checagem de sessão e remove todas as telas anteriores
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.sessionCheck,
-        (route) => false,
+            (route) => false,
       );
     } catch (e) {
       if (!mounted) return;
@@ -137,7 +223,6 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  /// 2. Mostra o PRIMEIRO pop-up (confirmação)
   Future<bool?> _showDeleteConfirmationDialog() {
     return showDialog<bool>(
       context: context,
@@ -151,7 +236,7 @@ class _WalletPageState extends State<WalletPage> {
             TextButton(
               child: const Text('Cancelar'),
               onPressed: () {
-                Navigator.of(context).pop(false); // Retorna 'false'
+                Navigator.of(context).pop(false);
               },
             ),
             TextButton(
@@ -160,7 +245,7 @@ class _WalletPageState extends State<WalletPage> {
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () {
-                Navigator.of(context).pop(true); // Retorna 'true'
+                Navigator.of(context).pop(true);
               },
             ),
           ],
@@ -177,7 +262,6 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  /// 3. Mostra o SEGUNDO pop-up (senha)
   Future<String?> _showPasswordDialogForDeletion() {
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -213,14 +297,14 @@ class _WalletPageState extends State<WalletPage> {
                     ),
                   ),
                   validator: (value) =>
-                      value!.isEmpty ? 'A senha é obrigatória' : null,
+                  value!.isEmpty ? 'A senha é obrigatória' : null,
                 ),
               ),
               actions: <Widget>[
                 TextButton(
                   child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
                   onPressed: () {
-                    Navigator.of(context).pop(null); // Retorna nulo
+                    Navigator.of(context).pop(null);
                   },
                 ),
                 ElevatedButton(
@@ -231,7 +315,6 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
-                      // Apenas retorna a senha, a lógica de API está em _handleDeleteWallet
                       Navigator.of(context).pop(passwordController.text);
                     }
                   },
@@ -244,34 +327,25 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  // =============================================================
-  // --- FIM DO FLUXO DE DELEÇÃO ---
-  // =============================================================
-
-  // --- FUNÇÃO DE CARREGAMENTO INICIAL COMBINADA (NOVA VERSÃO) ---
-  /// Checa o status da carteira, carrega saldo E histórico, e redireciona se necessário.
   void _checkAndLoadWalletStatus() async {
     try {
       final details = await _authService.getWalletDetails();
 
       if (details.containsKey('has_wallet') && details['has_wallet'] == false) {
         if (mounted) {
-          // Redireciona para a página de criação, substituindo a rota atual
           Navigator.pushReplacementNamed(context, AppRoutes.createWalletPage);
         }
       } else {
-        // Se já tem carteira, carrega os dados e inicia o polling
-        // NOTE: A função _fetchWalletData foi atualizada para buscar o histórico
+
         _fetchWalletData(showLoading: true);
-        _startPolling();
+        _connectWebSocket();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _balance = "Erro de API";
           _isLoading = false;
-          _isHistoryLoading =
-              false; // Garante que o indicador de histórico para
+          _isHistoryLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -282,29 +356,15 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  /// Inicia o timer para buscar dados da carteira a cada 10 segundos.
-  void _startPolling() {
-    _timer?.cancel();
-
-    _timer = Timer.periodic(const Duration(seconds: 240), (timer) {
-      _fetchWalletData(
-        showLoading: false,
-      ); // Não exibe loading spinner nas atualizações automáticas
-    });
-  }
-
-  // --- LÓGICA DE BUSCA E FORMATO (Fetch Data) ---
-  /// Busca o saldo, endereço e histórico da carteira na API.
   void _fetchWalletData({bool showLoading = true}) async {
     if (showLoading && mounted) {
       setState(() {
         _isLoading = true;
-        _isHistoryLoading = true; // Define o histórico como carregando
+        _isHistoryLoading = true;
       });
     }
 
     try {
-      // Busca o saldo e o histórico em paralelo
       final results = await Future.wait([
         _authService.getBalance(),
         _authService.getTransactions(limit: 20),
@@ -313,7 +373,6 @@ class _WalletPageState extends State<WalletPage> {
       final balanceData = results[0] as Map<String, dynamic>;
       final transactionData = results[1] as List<Map<String, dynamic>>;
 
-      // Atualiza o estado da UI
       _updateStateWithData(balanceData, transactionData);
 
       if (mounted) {
@@ -327,59 +386,66 @@ class _WalletPageState extends State<WalletPage> {
         setState(() {
           _balance = "Erro ao carregar";
           _isLoading = false;
-          _isHistoryLoading = false; // Para o loading mesmo em caso de erro
+          _isHistoryLoading = false;
         });
       }
     }
   }
 
-  /// Centraliza a lógica de atualização do estado com os dados recebidos da API.
+  String _formatCurrency(double value) {
+    final parts = value.toStringAsFixed(2).split('.');
+    final intPart = parts[0];
+    final decPart = parts[1];
+
+    String formatted = '';
+    int count = 0;
+
+    for (int i = intPart.length - 1; i >= 0; i--) {
+      if (count == 3) {
+        formatted = '.$formatted';
+        count = 0;
+      }
+      formatted = intPart[i] + formatted;
+      count++;
+    }
+
+    return '$formatted,$decPart';
+  }
+
   void _updateStateWithData(
-    Map<String, dynamic> balanceData,
-    List<Map<String, dynamic>> transactionData,
-  ) {
-    // Garante que o widget ainda está na árvore antes de atualizar o estado
+      Map<String, dynamic> balanceData,
+      List<Map<String, dynamic>> transactionData,
+      ) {
     if (!mounted) return;
 
-    // 1. Processamento do Saldo
     final dynamic balanceRaw = balanceData['balance_wei'];
     final String balanceAsString = balanceRaw?.toString() ?? '0';
     final balanceAsDouble = double.tryParse(balanceAsString) ?? 0.0;
-    // Converte o valor de Wei para ETH dividindo por 10^18.
     final balanceInETH = balanceAsDouble / 1e18;
 
-    // 2. Processamento do Endereço
     final fullAddress = balanceData['address'] as String? ?? "0x000...000";
 
-    // 3. Atualiza o estado da tela com os valores formatados.
     setState(() {
-      // Saldo
-      _balance =
-          "R\$ ${balanceInETH.toStringAsFixed(2).replaceAll('.', ',')} BRL";
+      _balance = "R\$ ${_formatCurrency(balanceInETH)} BRL";
 
-      // Endereço
       _fullAddress = fullAddress;
       _displayAddress = fullAddress.length > 10
           ? '${fullAddress.substring(0, 6)}...${fullAddress.substring(fullAddress.length - 4)}'
           : fullAddress;
 
-      // Histórico
       _transactions = transactionData;
     });
   }
 
-  // --- LÓGICA DE COPIAR ---
-  /// Copia o endereço completo da carteira para a área de transferência.
   void _copyToClipboard() {
     if (_fullAddress.isNotEmpty && _fullAddress != "0x000...000") {
       Clipboard.setData(ClipboardData(text: _fullAddress));
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Endereço copiado!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Endereço copiado!'))
+      );
     }
   }
 
-  // Certifique-se de que este método está dentro da sua classe StatefulWidget
   Widget _buildTransactionList({required String filterType}) {
     final filteredTransactions = _transactions
         .where((tx) => tx['type'] == filterType)
@@ -418,7 +484,7 @@ class _WalletPageState extends State<WalletPage> {
 
         final value = double.tryParse(tx['value']?.toString() ?? '0') ?? 0.0;
         final formattedValue =
-            "R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}";
+            "R\$ ${StringFormatter.formatAmount(value)}";
 
         return ListTile(
           leading: CircleAvatar(
@@ -443,7 +509,6 @@ class _WalletPageState extends State<WalletPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Tela de carregamento enquanto a página inicial está buscando dados
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: primaryBlue)),
@@ -454,7 +519,7 @@ class _WalletPageState extends State<WalletPage> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 237, 237, 237),
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 15, 73, 131),
+        backgroundColor: const Color.fromARGB(255, 15, 73, 131),
         elevation: 1,
         leading: IconButton(
           icon: const Icon(
@@ -493,22 +558,11 @@ class _WalletPageState extends State<WalletPage> {
         actions: [
           IconButton(
             icon: const Icon(
-              Icons.qr_code_scanner,
-              color: Color.fromARGB(255, 255, 255, 255),
-            ),
-            onPressed: () {
-              // TODO: Implementar navegação para a tela de QR Code
-            },
-          ),
-          // Ícone de Lixeira para exclusão da carteira
-          IconButton(
-            icon: const Icon(
               Icons.delete_outline,
               color: Color.fromARGB(255, 255, 68, 54),
             ),
-            onPressed: _handleDeleteWallet, // <<< CHAMA O FLUXO DE DELEÇÃO
+            onPressed: _handleDeleteWallet,
           ),
-
           const SizedBox(width: 8),
         ],
       ),
@@ -518,19 +572,16 @@ class _WalletPageState extends State<WalletPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Seção de Saldo Principal ---
               Center(
                 child: Column(
                   children: [
                     const SizedBox(height: 30),
-
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 255, 255, 255),
                         borderRadius: BorderRadius.circular(8),
                       ),
-
                       child: Column(
                         children: [
                           Text(
@@ -544,27 +595,11 @@ class _WalletPageState extends State<WalletPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
 
-                    // Botão de "Portfolio"
-                    TextButton(
-                      onPressed: () {
-                        // TODO: Implementar navegação para a tela de Portfolio
-                      },
-                      child: const Text(
-                        "+\$0 (0.00%) Portfolio >",
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 45, 138, 93),
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
                   ],
                 ),
               ),
-
-              // --- Botões de Ação Rápida (Send e Receive) ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -572,19 +607,11 @@ class _WalletPageState extends State<WalletPage> {
                     Icons.arrow_upward,
                     "Enviar",
                     primaryBlue,
-                    () => _navigateTo(AppRoutes.sendPage),
-                  ),
-                  _buildWalletActionButton(
-                    Icons.arrow_downward,
-                    "Receber",
-                    primaryBlue,
-                    () => _navigateTo(AppRoutes.receivePage),
-                  ),
+                        () => _navigateTo(AppRoutes.sendPage),
+                  )
                 ],
               ),
-
               const SizedBox(height: 40),
-
               Center(
                 child: Column(
                   children: [
@@ -594,7 +621,6 @@ class _WalletPageState extends State<WalletPage> {
                         color: const Color.fromARGB(255, 255, 255, 255),
                         borderRadius: BorderRadius.circular(8),
                       ),
-
                       child: Column(
                         children: [
                           const Text(
@@ -605,9 +631,7 @@ class _WalletPageState extends State<WalletPage> {
                               color: Color.fromARGB(255, 39, 39, 39),
                             ),
                           ),
-
                           const SizedBox(height: 10),
-
                           const TabBar(
                             indicatorColor: primaryBlue,
                             labelColor: darkText,
@@ -617,7 +641,6 @@ class _WalletPageState extends State<WalletPage> {
                               Tab(text: "Enviado"),
                             ],
                           ),
-                          // Conteúdo das Abas
                           SizedBox(
                             height: 400,
                             child: TabBarView(
