@@ -3,10 +3,11 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import 'chat_api_service.dart'; // Import necessário
+import 'package:flutter/foundation.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
@@ -359,25 +360,45 @@ class AuthService {
   // ----------------------------------------------------------------------
   // MÉTODOS CRIAÇÃO DE TRABALHO
   // ----------------------------------------------------------------------
+  
+  // CONVERSÃO DE BYTES PARA BASE64
+  Future<String>_encodeFileToBase64(File file) async {
+
+    List<int> bytes = await file.readAsBytes();
+    return base64Encode(bytes);
+
+  }
 
   Future<Map<String, dynamic>> createJob({
     required String title,
     required String description,
     required String category,
     required String location,
-    required String budget,
     required String deadline,
+    required List<File> images,
+    required String budget,
     required String password,
   }) async {
 
+
+    // ISOLAMENTO DE PROCESSO
+    List<Future<String>> encodingFutures = images.map((file) {
+        // 💡 Chama a função no Isolate
+        return compute(_encodeFileToBase64, file); 
+
+      }).toList();
+
+    List<String> listItemsB64 = await Future.wait(encodingFutures); // Convertendo conteúdo para B64    
+  
     // 1. Prepara o corpo (body) da requisição
     final Map<String, dynamic> jobData = {
       'title': title,
       'description': description,
       'category': category,
       'location': location,
-      'max_budget_eth': budget,
       'deadline': deadline,
+      'job_images': listItemsB64,
+      'max_budget_eth': budget,
       'password': password,
     };
 
