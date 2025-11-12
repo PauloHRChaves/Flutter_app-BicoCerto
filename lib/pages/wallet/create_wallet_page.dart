@@ -133,10 +133,18 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
               const SizedBox(height: 20),
               // Botão Importar
               TextButton(
-                onPressed: () {
-                  // Navega para a proxima pagina import wallet page:
-                  Navigator.pushNamed(context, AppRoutes.importWalletPage);
+                
+                onPressed: () async {
+                  
+                  final result = await Navigator.pushNamed(context, AppRoutes.importWalletPage);
+
+                  
+                  if (result == true && mounted) {
+                    
+                    Navigator.pushReplacementNamed(context, AppRoutes.walletPage);
+                  }
                 },
+                
                 child: const Text("Importar Carteira Existente", style: TextStyle(color: primaryBlue)),
               ),
             ],

@@ -28,7 +28,7 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
   }
 
   Future<void> _importWallet() async {
-    // Valida se os campos do formulário foram preenchidos
+    
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -38,14 +38,13 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
     });
 
     try {
-      // Chama o método que criamos no AuthService
+      
       await _authService.importWalletFromPrivateKey(
         privateKey: _privateKeyController.text,
         password: _passwordController.text,
       );
 
-      // Se a importação deu certo, mostra uma mensagem de sucesso
-      // e navega para a tela da carteira, limpando as telas anteriores.
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -53,14 +52,10 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.walletPage,
-          (route) => false, // Remove todas as rotas anteriores
-        );
+        Navigator.pop(context, true);
       }
     } catch (e) {
-      // Se deu erro, mostra a mensagem de erro para o usuário
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
