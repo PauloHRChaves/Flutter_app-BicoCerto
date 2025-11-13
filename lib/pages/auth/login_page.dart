@@ -47,10 +47,11 @@ class LoginPageState extends State<LoginPage> {
           );
           final chatController = context.read<ChatRoomsController>();
           await chatController.initialize();
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => const HomePage(isLoggedIn: true),
             ),
+            (Route<dynamic> route) => false, 
           );
 
         }

@@ -18,6 +18,13 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _SetProfileState();
 }
 
+void _handleLogout(BuildContext context) async {
+  final AuthService authService = AuthService();
+  await authService.logout();
+  if (!context.mounted) return;
+  Navigator.pushNamed(context, AppRoutes.sessionCheck);
+}
+
 class _SetProfileState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
 
@@ -44,7 +51,6 @@ class _SetProfileState extends State<ProfilePage> {
     _loadAllData(); 
   }
 
-  
   void _loadAllData() async {
     if (!mounted) return;
     setState(() {
@@ -382,6 +388,35 @@ class _SetProfileState extends State<ProfilePage> {
                   children: [
                     SizedBox(height: screenHeight * 0.01),
 
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.05,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _handleLogout(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(255, 105, 192, 254),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: const Text(
+                            "LOGOUT",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: screenHeight * 0.01),
+                    
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -477,6 +512,7 @@ class _SetProfileState extends State<ProfilePage> {
                         ],
                       ),
                     ),
+                    
                     SizedBox(height: screenHeight * 0.005),
                     Container(
                       color: Colors.white,
