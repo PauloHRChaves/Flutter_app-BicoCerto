@@ -1,37 +1,39 @@
+// lib/widgets/profile_tutorial_modal.dart
+
 import 'package:flutter/material.dart';
 
-class WalletTutorialModal extends StatefulWidget {
-  const WalletTutorialModal({super.key});
+class ProfileTutorialModal extends StatefulWidget {
+  const ProfileTutorialModal({super.key});
 
   @override
-  State<WalletTutorialModal> createState() => _WalletTutorialModalState();
+  State<ProfileTutorialModal> createState() => _ProfileTutorialModalState();
 }
 
-class _WalletTutorialModalState extends State<WalletTutorialModal> {
+class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
   final List<Map<String, dynamic>> _tutorialSteps = [
     {
-      'title': 'Criar Carteira',
-      'icon': Icons.add_card,
+      'title': 'Perfil do Usuario',
+      'icon': Icons.person_pin_circle_rounded,
       'color': Colors.blue,
       'description':
-          '1. Digite a senha da sua conta.\n2. Toque em "Criar Nova Carteira".\n\nSua carteira será gerada automaticamente e protegida pela sua senha.',
+          'Este é o seu perfil público e nele tem algumas informações:\n\n• Dashboard \n• Trabalhos \n• Localização e Descrição',
     },
     {
-      'title': 'Importar Carteira',
-      'icon': Icons.download_rounded,
+      'title': 'Edite suas Informações',
+      'icon': Icons.edit_note_rounded,
       'color': Colors.orange,
       'description':
-          'Já tem uma carteira?\n\n1. Toque em "Importar Carteira Existente".\n2. Cole sua Chave Privada.\n3. Digite sua senha.',
+          'Mudou de cidade? Quer uma foto nova?\n\nToque no ícone de Lápis (✏️) no topo da tela para atualizar seus dados.',
     },
     {
-      'title': 'Exclusão da Carteira',
-      'icon': Icons.security,
-      'color': Colors.red,
+      'title': 'Central de comando',
+      'icon': Icons.dashboard_customize_rounded,
+      'color': Colors.green,
       'description':
-          '⚠️ CUIDADO: Se você excluir a carteira sem ter um copia da Chave Privada, perderá seu saldo para sempre.\n\nPara excluir, va na tela da carteira e clique na lixeira,depois confirme com sua senha.',
+          'Use os botões de atalho para navegar rápido:\n\n💳 Carteira: Seus pagamentos.\n📊 Dashboard: Seus gráficos de ganhos.\n💼 Jobs: Seus serviços em andamento.',
     },
   ];
 
@@ -49,7 +51,7 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
       child: Column(
         children: [
           const SizedBox(height: 10),
-          // Barrinha cinza de "puxar"
+          
           Container(
             width: 40,
             height: 5,
@@ -61,7 +63,7 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              "Como funciona a Carteira?",
+              "Conheça seu Perfil",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -87,9 +89,9 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 10), // Espaçamento extra no topo
+                      const SizedBox(height: 10),
                       CircleAvatar(
-                        radius: 45, // Aumentei levemente o ícone
+                        radius: 45,
                         backgroundColor: step['color'].withOpacity(0.1),
                         child: Icon(step['icon'], size: 45, color: step['color']),
                       ),
@@ -98,7 +100,7 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
                         step['title'],
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 22, // Fonte do título um pouco maior
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: step['color'],
                         ),
@@ -106,14 +108,14 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
                       const SizedBox(height: 20),
                       Text(
                         step['description'],
-                        textAlign: TextAlign.center, // Centraliza o texto
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 16,
-                          height: 1.5, // Espaçamento entre linhas para leitura fácil
+                          height: 1.5,
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 20), // Espaço no final para não colar
+                      const SizedBox(height: 20),
                     ],
                   ),
                 );
@@ -121,6 +123,7 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
             ),
           ),
 
+          
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
@@ -161,7 +164,7 @@ class _WalletTutorialModalState extends State<WalletTutorialModal> {
               ),
             ),
           ),
-          const SizedBox(height: 20), // Margem segura inferior
+          const SizedBox(height: 20),
         ],
       ),
     );
