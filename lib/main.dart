@@ -4,6 +4,7 @@ import 'package:bico_certo/pages/job/job_details_page.dart';
 import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/services/job_service.dart';
 import 'package:bico_certo/services/job_state_service.dart';
+import 'package:bico_certo/services/pending_rating_service.dart';
 import 'package:bico_certo/services/wallet_state_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/local_storage_service.dart';
@@ -22,6 +23,15 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+
+  final type = message.data['type'];
+  if (type == 'rate_client_prompt') {
+    await PendingRatingService.savePendingRating(
+      jobId: message.data['job_id'] ?? '',
+      clientName: message.data['client_name'] ?? 'Cliente',
+      jobTitle: message.data['job_title'] ?? 'Trabalho',
+    );
+  }
 }
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -53,7 +63,7 @@ void main() async {
             _handleNotificationClick(data['room_id']);
           } else if (type == 'job') {
             _handleJobNotificationClick(data['job_id']);
-          }else if (type == 'wallet') {
+          } else if (type == 'wallet') {
             _handleWalletNotificationClick();
           }
         } catch (e) {
@@ -88,6 +98,75 @@ void main() async {
   final isFirstTime = await LocalStorageService.getIsFirstTime();
   await dotenv.load(fileName: ".env");
   runApp(MyApp(isFirstTime: isFirstTime));
+}
+
+Future<void> showPendingRatingModal(BuildContext context) async {
+  final pendingData = await PendingRatingService.getPendingRating();
+
+  if (pendingData == null) return;
+
+  final result = await showDialog<Map<String, dynamic>>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withOpacity(0.7),
+    builder: (context) => _GlobalRateClientDialog(
+      jobId: pendingData['job_id'],
+      clientName: pendingData['client_name'],
+      jobTitle: pendingData['job_title'] ?? 'Trabalho',
+    ),
+  );
+
+  await PendingRatingService.clearPendingRating();
+
+  if (result != null) {
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Enviar avaliação
+    final jobService = JobService();
+    try {
+      final response = await jobService.rateClient(
+        jobId: pendingData['job_id'],
+        rating: result['rating'],
+        password: result['password'],
+      );
+
+      // Fechar loading
+      Navigator.pop(context);
+
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Cliente avaliado com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Erro ao avaliar cliente'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Fechar loading
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao avaliar: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }
 
 Future<void> _handleWalletNotificationClick() async {
@@ -194,6 +273,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _setupFCM();
+    // ✅ REMOVIDO: Não verificar aqui, vamos verificar no SessionCheckPage
   }
 
   Future<void> _setupFCM() async {
@@ -284,8 +364,7 @@ class _MyAppState extends State<MyApp> {
                 payload: jsonEncode({'type': 'job', 'job_id': jobId}),
               );
             }
-          }else if (type == 'wallet_transaction') {
-
+          } else if (type == 'wallet_transaction') {
             final walletState = WalletStateService();
             final isViewingWallet = walletState.isViewingWallet();
 
@@ -309,6 +388,28 @@ class _MyAppState extends State<MyApp> {
                 ),
                 payload: jsonEncode({'type': 'wallet'}),
               );
+            }
+          }
+          // ✅ TRATAR notificação de avaliação de cliente (APP ABERTO)
+          else if (type == 'rate_client_prompt') {
+            final jobId = message.data['job_id'];
+            final clientName = message.data['client_name'] ?? 'Cliente';
+            final jobTitle = message.data['job_title'] ?? 'Trabalho'; // ✅ NOVO
+
+            // Salvar avaliação pendente
+            PendingRatingService.savePendingRating(
+              jobId: jobId,
+              clientName: clientName,
+              jobTitle: jobTitle, // ✅ NOVO
+            );
+
+            // Mostrar modal imediatamente se o contexto estiver disponível
+            if (navigatorKey.currentContext != null) {
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (navigatorKey.currentContext != null) {
+                  showPendingRatingModal(navigatorKey.currentContext!);
+                }
+              });
             }
           }
         });
@@ -343,8 +444,18 @@ class _MyAppState extends State<MyApp> {
       if (jobId != null) {
         _handleJobNotificationClick(jobId);
       }
-    }else if (type == 'wallet_transaction') {
+    } else if (type == 'wallet_transaction') {
       _handleWalletNotificationClick();
+    }
+    // ✅ TRATAR notificação de avaliação (APP FOI ABERTO PELA NOTIFICAÇÃO)
+    else if (type == 'rate_client_prompt') {
+      if (navigatorKey.currentContext != null) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (navigatorKey.currentContext != null) {
+            showPendingRatingModal(navigatorKey.currentContext!);
+          }
+        });
+      }
     }
   }
 
@@ -372,5 +483,279 @@ class _MyAppState extends State<MyApp> {
         onGenerateRoute: AppRoutes.onGenerateRoute,
       ),
     );
+  }
+}
+
+class _GlobalRateClientDialog extends StatefulWidget {
+  final String jobId;
+  final String clientName;
+  final String jobTitle;
+
+  const _GlobalRateClientDialog({
+    required this.jobId,
+    required this.clientName,
+    required this.jobTitle,
+  });
+
+  @override
+  State<_GlobalRateClientDialog> createState() => _GlobalRateClientDialogState();
+}
+
+class _GlobalRateClientDialogState extends State<_GlobalRateClientDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  int _rating = 3;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // ✅ Modal no centro
+        AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.star, color: Colors.amber[700]),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Avaliar Cliente')),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Informações do job
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.work, size: 16, color: Colors.blue[700]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              widget.jobTitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[900],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.person, size: 16, color: Colors.blue[700]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Cliente: ${widget.clientName}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  'O trabalho foi aprovado! Como foi trabalhar com este cliente?',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+
+                // Rating com estrelas
+                const Text(
+                  'Sua avaliação:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < _rating ? Icons.star : Icons.star_border,
+                          size: 40,
+                          color: Colors.amber[700],
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _rating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    _getRatingText(_rating),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber[700],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Campo de senha
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Senha da Carteira',
+                    hintText: 'Digite sua senha',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Você pode avaliar o cliente agora ou ignorar e avaliar depois.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+
+                // Botão "Avaliar Agora"
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_passwordController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Por favor, digite sua senha'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.pop(context, {
+                        'password': _passwordController.text,
+                        'rating': _rating,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[700],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Avaliar Agora',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          right: 16,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Ignorar',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getRatingText(int rating) {
+    switch (rating) {
+      case 1:
+        return 'Muito Ruim';
+      case 2:
+        return 'Ruim';
+      case 3:
+        return 'Regular';
+      case 4:
+        return 'Bom';
+      case 5:
+        return 'Excelente';
+      default:
+        return '';
+    }
   }
 }

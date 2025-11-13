@@ -1,85 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:bico_certo/services/auth_guard.dart';
 import 'package:bico_certo/widgets/password_request.dart';
-
+import 'package:bico_certo/widgets/photo_createjob.dart';
 import '../../models/location_suggestion.dart';
 import '../../services/location_service.dart';
 import '../../widgets/location_field_with_map.dart';
 
 
-class PhotoInputWidget extends StatelessWidget {
-
-
-  final List<String> photoUrls;
-  final VoidCallback onAddPhoto;
-
-  const PhotoInputWidget({
-    super.key,
-    required this.photoUrls,
-    required this.onAddPhoto,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Fotos (Opcional)", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: photoUrls.length + 1, // +1 para o botão de adicionar
-            itemBuilder: (context, index) {
-              if (index == photoUrls.length) {
-                // Botão de Adicionar Foto
-                return GestureDetector(
-                  onTap: onAddPhoto,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade400, width: 1.5),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_a_photo, color: Colors.grey, size: 30),
-                        SizedBox(height: 4),
-                        Text("Adicionar", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              // Exibição das Fotos (Simulação com Placeholders)
-              return Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    photoUrls[index],
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class CurrencyInputFormatter extends TextInputFormatter {
 
@@ -147,6 +82,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
   String? _selectedCategory; // Estado da Categoria (Dropdown)
   String _selectedDateFormated = '';
+  DateTime? _selectedDate;
 
   double? _selectedLatitude;
   double? _selectedLongitude;
@@ -156,7 +92,75 @@ class _CreateOrderPageState extends State<CreateJobPage> {
   final List<String> _categories = [
     'Reformas', 'Assistência Técnica', 'Aulas Particulares', 'Design', 'Consultoria', 'Elétrica'
   ];
+  final List<File> _jobPhotos = [];
+  final ImagePicker _picker = ImagePicker();
 
+  Future<void> _pickImage() async {
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Escolher Imagem'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galeria de Fotos'),
+                onTap: () {
+                  Navigator.of(context).pop(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Câmera'),
+                onTap: () {
+                  Navigator.of(context).pop(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source != null) {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1000, // Opcional: Limita a resolução para economizar banda/espaço
+        imageQuality: 70, // Opcional: Limita a qualidade da imagem
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          // Adiciona o novo arquivo à lista
+          _jobPhotos.add(File(pickedFile.path));
+        });
+      }
+    }
+  }
+  
+  // Função para abrir o seletor, coletar data, e formata-la.
+  Future<void> _selectDate(BuildContext context) async {
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 7)), // Data inicial
+      firstDate: DateTime.now(), // Não pode ser uma data passada
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)), // Limite de 2 anos
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      
+      final DateFormat formatter = DateFormat("dd-MM-yyyy");
+      final String formattedDate = formatter.format(picked);
+
+      setState(() {
+        _selectedDate = picked;
+        _selectedDateFormated = formattedDate;
+      });
+    }
+  }
 
   // Função para tratar o valor da proposta antes de enviar
   String _treatedBugdet(String formattedText){
@@ -211,11 +215,13 @@ class _CreateOrderPageState extends State<CreateJobPage> {
       }
 
       // Chama o serviço de API para criar o trabalho
+
       await authService.createJob(
         title: _titleJobController.text,
         description: _descriptionJobController.text,
         category: _selectedCategory!,
         location: locationWithCoords,
+        images: _jobPhotos,
         budget: _treatedBugdet(_budgetController.text),
         deadline: "30-12-2030",
         password: password,
@@ -240,8 +246,8 @@ class _CreateOrderPageState extends State<CreateJobPage> {
       );
     }
   }
-  // ---------------------------FIM DA LÓGICA DE ENVIO-------------------------------
-
+  
+  // ---------------------------FIM DA LÓGICA DE ENVIO------------------------------- 
   void _showConfirmationModal(
     BuildContext context,
     String buttonText,
@@ -284,74 +290,81 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Criar Novo Pedido'),
-        backgroundColor: const Color.fromARGB(255, 14, 67, 182),
-        foregroundColor: Colors.white,
-      ),
+    return AuthGuard(
+        child:  Scaffold(
+        appBar: AppBar(
+          title: const Text('Criar Novo Pedido'),
+          backgroundColor: const Color.fromARGB(255, 14, 67, 182),
+          foregroundColor: Colors.white,
+        ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título do Pedido
-            _buildTextField("Título do Pedido", _titleJobController, "Ex: Conserto de vazamento no banheiro"),
-            const SizedBox(height: 20),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Título do Pedido
+              _buildTextField("Título do Pedido", _titleJobController, "Ex: Conserto de vazamento no banheiro"),
+              const SizedBox(height: 20),
 
-            // Categoria do Serviço (Dropdown)
-            _buildCategoryDropdown(),
-            const SizedBox(height: 20),
+              // Categoria do Serviço (Dropdown)
+              _buildCategoryDropdown(),
+              const SizedBox(height: 20),
 
-            // Localização
-            LocationFieldMapOnly(
-              controller: _locationJobController,
-              onLocationSelected: _onLocationSelected,
-              onCoordinatesSelected: _onCoordinatesSelected,
-            ),
+              // Localização
+              LocationFieldMapOnly(
+                controller: _locationJobController,
+                onLocationSelected: _onLocationSelected,
+                onCoordinatesSelected: _onCoordinatesSelected,
+              ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // Descrição
-            _buildDescriptionField(),
-            const SizedBox(height: 20),
+              // Descrição
+              _buildDescriptionField(),
+              const SizedBox(height: 20),
 
-            // Entrada de Fotos
-            PhotoInputWidget(
-              photoUrls: [],
-              onAddPhoto: (){},
-            ),
-            const SizedBox(height: 20),
-
-            // Data Estipulada de Término
-            // _buildDateField(),
-            // const SizedBox(height: 30),
-
-            _buildCurrencyFieldWithoutPackage("Valor de Proposta", _budgetController, "Ex: 150,00"),
-            const SizedBox(height: 30),
-
-            // Botão de Envio
-            Center(
-              child: ElevatedButton(
-                onPressed: (){
-                  _handleJobCreationAttempt();
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50), // Botão de largura total
-                  backgroundColor: const Color.fromARGB(255, 14, 67, 182),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+              // Entrada de Fotos
+              PhotoInputWidget(
+                photoFiles: _jobPhotos, 
+                onAddPhoto: _pickImage, // Função de seleção de imagem
+                onRemovePhoto: (index) { 
+                  setState(() {
+                      _jobPhotos.removeAt(index);
+                    });
+                  },
                 ),
-                child: const Text(
-                  'Publicar Pedido',
-                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+              const SizedBox(height: 20),
+
+              // Data Estipulada de Término
+              // _buildDateField(),
+              // const SizedBox(height: 30),
+
+              _buildCurrencyFieldWithoutPackage("Valor de Proposta", _budgetController, "Ex: 150,00"),
+              const SizedBox(height: 30),
+
+              // Botão de Envio
+              Center(
+                child: ElevatedButton(
+                  onPressed: (){
+                    _handleJobCreationAttempt();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50), // Botão de largura total
+                    backgroundColor: const Color.fromARGB(255, 14, 67, 182),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'Publicar Pedido',
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      )
     );
   }
 
@@ -433,7 +446,42 @@ class _CreateOrderPageState extends State<CreateJobPage> {
       ],
     );
   }
-
+  
+  // Seletor de Data
+  Widget _buildDateField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Data Estipulada de Término", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => _selectDate(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedDate == null 
+                      ? 'Selecione a data limite' 
+                      : 'Data: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: _selectedDate == null ? Colors.black54 : Colors.black,
+                  ),
+                ),
+                Icon(Icons.calendar_today, color: Colors.grey.shade600),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );    
+  }
   // Campo de Entrada de Valor (Moeda) - Sem Pacote Externo
   Widget _buildCurrencyFieldWithoutPackage(
     String label,

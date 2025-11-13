@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
-import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
+
+import '../../main.dart';
+import '../../services/pending_rating_service.dart';
+
+final Map<String, String> categoryMapping = {
+  'Reformas': 'reformas',
+  'Assistência Técnica': 'assistencia_tecnica',
+  'Aulas Particulares': 'aulas_particulares',
+  'Faxina': 'faxina',
+  'Pintura': 'pintura',
+  'Elétrica': 'eletrica'
+};
 
 const Color kPrimaryBlue = Color.fromARGB(255, 12, 120, 200);
 const Color kHeaderBlueDark = Color.fromARGB(255, 22, 76, 110);
@@ -164,6 +175,20 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(const Duration(milliseconds: 800), () async {
+      if (mounted) {
+        final hasPending = await PendingRatingService.hasPendingRating();
+        if (hasPending && mounted) {
+          showPendingRatingModal(context);
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -192,18 +217,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final double fontnormal = screenWidth * 0.04;
     final double fontbold = screenWidth * 0.05;
-    final double title = screenWidth * 0.06;
 
     const Color darkBlue = Color.fromARGB(255, 22, 76, 110);
-    const Color lightBlue = Color.fromARGB(255, 10, 94, 140);
-    const Color accentBlue = Color.fromARGB(255, 74, 58, 255);
-    const Color accentColor = Color.fromARGB(255, 255, 132, 0);
-    const Color greenColor = Color.fromARGB(255, 76, 175, 80);
 
     const Color kPrimaryBlue = Color.fromARGB(255, 12, 120, 200);
     const Color kIconBlue = Color.fromARGB(255, 12, 120, 200);

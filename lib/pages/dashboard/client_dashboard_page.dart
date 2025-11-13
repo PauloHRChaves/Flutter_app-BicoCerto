@@ -386,7 +386,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                   Row(
                     children: [
                       Text(
-                        clientRating.toStringAsFixed(2),
+                        clientRating.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
