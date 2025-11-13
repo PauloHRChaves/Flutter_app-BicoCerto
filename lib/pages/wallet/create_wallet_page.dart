@@ -26,7 +26,7 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
   // Função que chama a API para criar a carteira
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() { _isLoading = true; });
 
     try {
@@ -34,16 +34,16 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
       final response = await _authService.createWallet(password: _passwordController.text);
 
       // Extrai a mensagem de sucesso do JSON retornado pela API
-      final successMessage = response['message'] as String? ?? 'Carteira criada com sucesso!'; 
+      final successMessage = response['message'] as String? ?? 'Carteira criada com sucesso!';
 
       if (mounted) {
         // 1. Exibe a mensagem de sucesso
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(successMessage)),
         );
-        
-        // 2. Redireciona para a WalletPage (que iniciará o getBalance no initState)
-        Navigator.pushReplacementNamed(context, AppRoutes.walletPage); 
+
+        // 2. Substitui CreateWalletPage pela WalletPage
+        Navigator.pushReplacementNamed(context, AppRoutes.walletPage);
       }
     } catch (e) {
       if (mounted) {

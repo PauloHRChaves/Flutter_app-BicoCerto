@@ -426,7 +426,7 @@ class _WalletPageState extends State<WalletPage> {
     final fullAddress = balanceData['address'] as String? ?? "0x000...000";
 
     setState(() {
-      _balance = "R\$ ${_formatCurrency(balanceInETH)} BRL";
+      _balance = "R\$ ${_formatCurrency(balanceInETH)}";
 
       _fullAddress = fullAddress;
       _displayAddress = fullAddress.length > 10
