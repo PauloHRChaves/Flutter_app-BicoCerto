@@ -442,7 +442,7 @@ class _SetProfileState extends State<ProfilePage> {
                                 ),
                               ),
                               Text(
-                                // ⚠️ ATUALIZADO: Vem da variável de state _state
+                                
                                 _state,
                                 style: TextStyle(
                                   color: Colors.black54,
@@ -504,7 +504,7 @@ class _SetProfileState extends State<ProfilePage> {
                           _buildActionButton(
                             context: context,
                             icon: Icons.dashboard, // Ícone de Engrenagem
-                            label: "Dash Provider",
+                            label: "Dash Provedor",
                               onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
