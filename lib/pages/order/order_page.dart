@@ -46,7 +46,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   int? _minProposalCount;
   int? _maxProposalCount;
   String _jobSortBy = 'recent';
-  Set<JobStatus> _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress};
+  Set<JobStatus> _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress, JobStatus.completed};
 
   final List<String> _categoryList = [
     'Reformas',
@@ -303,7 +303,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         },
         onClear: () {
           setState(() {
-            _selectedJobStatuses = {JobStatus.open};
+            _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress, JobStatus.completed};
             _selectedJobCategory = null;
             _minJobBudget = null;
             _maxJobBudget = null;
@@ -591,7 +591,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () {
                 setState(() {
-                  _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress};
+                  _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress, JobStatus.completed};
                 });
                 _applyJobFilters();
               },

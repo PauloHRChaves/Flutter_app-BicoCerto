@@ -3,6 +3,9 @@ import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 
+import '../../main.dart';
+import '../../services/pending_rating_service.dart';
+
 final Map<String, String> categoryMapping = {
   'Reformas': 'reformas',
   'Assistência Técnica': 'assistencia_tecnica',
@@ -71,8 +74,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Controller para capturar o texto digitado
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(const Duration(milliseconds: 800), () async {
+      if (mounted) {
+        final hasPending = await PendingRatingService.hasPendingRating();
+        if (hasPending && mounted) {
+          showPendingRatingModal(context);
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {

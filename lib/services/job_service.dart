@@ -60,7 +60,7 @@ class JobService {
       final response = await http.post(
         Uri.parse('$baseUrl/jobs/approve'),
         headers: headers,
-          body: json.encode({
+        body: json.encode({
           'job_id': jobId,
           'rating': rating,
           'password': password,
@@ -335,6 +335,46 @@ class JobService {
     } catch (e) {
       print('Erro ao buscar categorias: $e');
       return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> rateClient({
+    required String jobId,
+    required int rating,
+    required String password,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/jobs/rate-client'),
+        headers: headers,
+        body: json.encode({
+          'job_id': jobId,
+          'rating': rating,
+          'password': password,
+        }),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Cliente avaliado com sucesso',
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? data['detail'] ?? 'Erro ao avaliar cliente',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Erro ao avaliar cliente: $e',
+      };
     }
   }
 }
