@@ -3,6 +3,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:bico_certo/services/exeption_messages.dart';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -204,7 +205,8 @@ class AuthService {
       return json.decode(response.body);
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no registro.');
+      print("NO REGISTER: ${jsonResponse}");
+      throw thisException(getCustomErrorMessage(jsonResponse, 'auth/register'));
     }
   }
 
@@ -240,6 +242,7 @@ class AuthService {
         'Content-Type': 'application/json; charset=UTF-8',
         'ngrok-skip-browser-warning': 'true',
       },
+
       body: jsonEncode(<String, dynamic>{
         'email': email,
         'password': password,
@@ -247,9 +250,11 @@ class AuthService {
       }),
     );
 
+      
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
       final data = responseBody['data'];
+
 
       if (data != null && data['access_token'] is String) {
         final String accessToken = data['access_token'];
@@ -269,7 +274,8 @@ class AuthService {
       }
     } else {
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      throw Exception(jsonResponse['detail'] ?? 'Erro desconhecido no login.');
+      throw thisException(getCustomErrorMessage(jsonResponse, 'auth/login'));
+
     }
   }
 

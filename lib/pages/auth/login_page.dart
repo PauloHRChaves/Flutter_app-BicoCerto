@@ -4,6 +4,7 @@ import 'package:bico_certo/pages/home/home_page.dart';
 import 'package:bico_certo/pages/auth/forgot_password_page.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/chat_rooms_controller.dart';
+import 'package:bico_certo/services/exeption_messages.dart';
 
 // ----------------------------------------------------
 // DEFINIÇÃO DA PÁGINA E CONTROLE DE ESTADO (UI)
@@ -62,9 +63,7 @@ class LoginPageState extends State<LoginPage> {
       } catch (e) {
         // Lógica de erro: exibe uma mensagem de erro se o login falhar
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro no login: ${e.toString()}')),
-          );
+           showCustomErrorSnackbar(context, e.toString());
         }
       }
     }
