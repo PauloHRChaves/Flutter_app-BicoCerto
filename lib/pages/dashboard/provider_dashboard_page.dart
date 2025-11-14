@@ -1,4 +1,5 @@
 import 'package:bico_certo/services/dashboard_service.dart';
+import 'package:bico_certo/utils/string_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -1084,6 +1085,36 @@ class _EarningsLineChart extends StatelessWidget {
 
     return LineChart(
       LineChartData(
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+              return touchedBarSpots.map((barSpot) {
+                final flSpot = barSpot;
+                final index = flSpot.x.toInt();
+                final itemData = data[index];
+
+                return LineTooltipItem(
+                  '${itemData['month']}\n',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: 'R\$ ${StringFormatter.formatAmount(flSpot.y)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                  textAlign: TextAlign.left,
+                );
+              }).toList();
+            },
+          ),
+          handleBuiltInTouches: true, // Habilita os toques padrão (clicar/passar o mouse)
+        ),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -1100,7 +1131,7 @@ class _EarningsLineChart extends StatelessWidget {
               reservedSize: 50,
               getTitlesWidget: (value, meta) {
                 return Text(
-                  'R\$ ${(value / 1000).toStringAsFixed(1)}k',
+                  'R\$ ${StringFormatter.formatAmount(value)}',
                   style: const TextStyle(
                     color: Color(0xFF6B7280),
                     fontSize: 10,
@@ -1188,6 +1219,42 @@ class _RecentActivityChart extends StatelessWidget {
 
     return BarChart(
       BarChartData(
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            tooltipPadding: const EdgeInsets.all(8),
+            tooltipMargin: 8, // Distância do balão até a barra
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              // 'groupIndex' é o índice da nossa lista 'categories'
+              final itemData = data[groupIndex];
+              DateTime date = DateTime.parse(itemData['date']);
+
+              String dataFormatada = DateFormat('dd/MM').format(date);
+
+              // 'rod.toY' é o valor (altura) da barra
+              final spentAmount = rod.toY;
+
+              return BarTooltipItem(
+                '$dataFormatada\n', // Título (categoria)
+                const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                children: [
+                  TextSpan(
+                    text: '${(spentAmount).toInt()} Jobs Realizados', // Valor
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                textAlign: TextAlign.left,
+              );
+            },
+          ),
+        ),
         alignment: BarChartAlignment.spaceAround,
         maxY: 6,
         titlesData: FlTitlesData(

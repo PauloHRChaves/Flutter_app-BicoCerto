@@ -1,3 +1,4 @@
+import 'package:bico_certo/utils/string_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -72,8 +73,6 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeCard(),
-            const SizedBox(height: 20),
             _buildQuickStats(),
             const SizedBox(height: 24),
             _buildSpendingChart(),
@@ -237,111 +236,6 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
     );
   }
 
-  Widget _buildWelcomeCard() {
-    final pendingApprovals = _dashboardData['pendingApprovals'] as num? ?? 0;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF059669),
-            const Color(0xFF059669).withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF059669).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.dashboard,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Olá, Cliente!',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Gerencie seus serviços',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (pendingApprovals > 0) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.notifications_active,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Você tem ${pendingApprovals.toInt()} trabalho${pendingApprovals != 1 ? 's' : ''} aguardando aprovação',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildQuickStats() {
     final metrics = _dashboardData['metrics'] as Map<String, dynamic>?;
     final clientRating = (metrics?['clientRating'] as num?)?.toDouble() ?? 0.0;
@@ -375,7 +269,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Sua Reputação',
+                    'Sua Reputação como Cliente',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -1059,6 +953,36 @@ class _SpendingLineChart extends StatelessWidget {
 
     return LineChart(
       LineChartData(
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+              return touchedBarSpots.map((barSpot) {
+                final flSpot = barSpot;
+                final index = flSpot.x.toInt();
+                final itemData = data[index];
+
+                return LineTooltipItem(
+                  '${itemData['month']}\n',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: 'R\$ ${StringFormatter.formatAmount(flSpot.y)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                  textAlign: TextAlign.left,
+                );
+              }).toList();
+            },
+          ),
+          handleBuiltInTouches: true, // Habilita os toques padrão (clicar/passar o mouse)
+        ),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -1075,7 +999,7 @@ class _SpendingLineChart extends StatelessWidget {
               reservedSize: 50,
               getTitlesWidget: (value, meta) {
                 return Text(
-                  'R\$ ${(value / 1000).toStringAsFixed(1)}k',
+                  'R\$ ${StringFormatter.formatAmount(value)}',
                   style: const TextStyle(
                     color: Color(0xFF6B7280),
                     fontSize: 10,
@@ -1169,6 +1093,40 @@ class _CategorySpendingChart extends StatelessWidget {
 
     return BarChart(
       BarChartData(
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            tooltipPadding: const EdgeInsets.all(8),
+            tooltipMargin: 8, // Distância do balão até a barra
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              // 'groupIndex' é o índice da nossa lista 'categories'
+              final itemData = categories[groupIndex];
+              final categoryName = itemData['category']?.toString() ?? '';
+
+              // 'rod.toY' é o valor (altura) da barra
+              final spentAmount = rod.toY;
+
+              return BarTooltipItem(
+                '$categoryName\n', // Título (categoria)
+                const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                children: [
+                  TextSpan(
+                    text: 'R\$ ${StringFormatter.formatAmount(spentAmount)}', // Valor
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                textAlign: TextAlign.left,
+              );
+            },
+          ),
+        ),
         alignment: BarChartAlignment.spaceAround,
         maxY: effectiveMaxY * 1.2,
         titlesData: FlTitlesData(
@@ -1178,7 +1136,7 @@ class _CategorySpendingChart extends StatelessWidget {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text(
-                  'R\$${(value / 1000).toStringAsFixed(1)}k',
+                  'R\$${value.toInt()}',
                   style: const TextStyle(
                     color: Color(0xFF6B7280),
                     fontSize: 10,
