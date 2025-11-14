@@ -1,6 +1,7 @@
 // ⚠️ ESTA PAGINA DEVE SER VISIVEL APENAS PELO DONO DA MESMA ⚠️
 
 import 'package:bico_certo/pages/dashboard/client_dashboard_page.dart';
+import 'package:bico_certo/pages/profile/profile_tutorial_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
 import 'package:bico_certo/routes.dart';
@@ -339,6 +340,18 @@ class _SetProfileState extends State<ProfilePage> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            tooltip: 'Ajuda',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const ProfileTutorialModal(),
+              );
+            },
+          ),
+          IconButton(
             
             icon: const Icon(
               Icons.edit_outlined, 
@@ -477,7 +490,7 @@ class _SetProfileState extends State<ProfilePage> {
                                 ),
                               ),
                               Text(
-                                // ⚠️ ATUALIZADO: Vem da variável de state _state
+                                
                                 _state,
                                 style: TextStyle(
                                   color: Colors.black54,
@@ -540,7 +553,7 @@ class _SetProfileState extends State<ProfilePage> {
                           _buildActionButton(
                             context: context,
                             icon: Icons.dashboard, // Ícone de Engrenagem
-                            label: "Dash Provider",
+                            label: "Dash Provedor",
                               onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
