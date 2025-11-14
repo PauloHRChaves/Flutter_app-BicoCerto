@@ -271,47 +271,6 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     );
   }
 
-  Future<void> _showRateClientDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _RateClientDialog(clientName: _currentJob.metadata.data.employer.name ?? 'Cliente'),
-    );
-
-    if (result == null) return;
-
-    final password = result['password'] as String;
-    final rating = result['rating'] as int;
-
-    _showLoadingDialog();
-
-    try {
-      final response = await _jobService.rateClient(
-        jobId: _currentJob.jobId,
-        rating: rating,
-        password: password,
-      );
-
-      if (!mounted) return;
-      Navigator.pop(context); // Fechar loading
-
-      if (response['success'] == true) {
-        _showSuccessSnackBar(response['message'] ?? 'Cliente avaliado com sucesso!');
-        await Future.delayed(const Duration(seconds: 1));
-        if (mounted) {
-          _reloadJobDetails();
-        }
-      } else {
-        _showErrorSnackBar(response['message'] ?? 'Erro ao avaliar cliente');
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        _showErrorSnackBar('Erro ao avaliar cliente: $e');
-      }
-    }
-  }
-
   void _handleWebSocketMessage(dynamic message) {
     try {
       final data = jsonDecode(message);
@@ -320,65 +279,30 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       if (type == 'job_status_update') {
         final updateData = data['data'];
         final jobId = updateData['job_id'];
-        final status = updateData['status'];
 
         if (jobId == _currentJob.jobId) {
-          // Se for notificação para avaliar cliente
-          if (status == 'rate_client_prompt') {
-            if (mounted) {
-              // Mostrar SnackBar
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.white),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          updateData['message'] ?? 'Avalie o cliente',
-                          style: const TextStyle(color: Colors.white),
-                        ),
+          // Outras notificações
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.update, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        updateData['message'] ?? 'Job atualizado',
+                        style: const TextStyle(color: Colors.white),
                       ),
-                    ],
-                  ),
-                  backgroundColor: Colors.amber[700],
-                  duration: const Duration(seconds: 4),
-                  behavior: SnackBarBehavior.floating,
+                    ),
+                  ],
                 ),
-              );
-
-              // Abrir modal automaticamente
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  _showRateClientDialog();
-                }
-              });
-            }
-          } else {
-            // Outras notificações
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(Icons.update, color: Colors.white),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          updateData['message'] ?? 'Job atualizado',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: Colors.blue[700],
-                  duration: const Duration(seconds: 4),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
+                backgroundColor: Colors.blue[700],
+                duration: const Duration(seconds: 4),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
-
           _reloadJobDetails();
         }
       }
@@ -3635,169 +3559,6 @@ class _CompleteJobDialogState extends State<_CompleteJobDialog> {
         ),
       ],
     );
-  }
-}
-
-
-class _RateClientDialog extends StatefulWidget {
-  final String clientName;
-
-  const _RateClientDialog({required this.clientName});
-
-  @override
-  State<_RateClientDialog> createState() => _RateClientDialogState();
-}
-
-class _RateClientDialogState extends State<_RateClientDialog> {
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
-  int _rating = 3;
-
-  @override
-  void dispose() {
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Row(
-        children: [
-          Icon(Icons.star, color: Colors.amber[700]),
-          const SizedBox(width: AppDimensions.spacing),
-          const Text('Avaliar Cliente'),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'O trabalho foi aprovado! Avalie ${widget.clientName}:',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-
-            // Avaliação com estrelas
-            const Text(
-              'Como foi trabalhar com este cliente?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < _rating ? Icons.star : Icons.star_border,
-                      size: 40,
-                      color: Colors.amber[700],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _rating = index + 1;
-                      });
-                    },
-                  );
-                }),
-              ),
-            ),
-            Center(
-              child: Text(
-                _getRatingText(_rating),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[700],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Campo de senha
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Senha da Carteira',
-                hintText: 'Digite sua senha',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-                ),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Você pode avaliar o cliente agora ou fechar este modal e avaliar depois.',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Avaliar Depois'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (_passwordController.text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Por favor, digite sua senha'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            Navigator.pop(context, {
-              'password': _passwordController.text,
-              'rating': _rating,
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber[700],
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Avaliar Agora'),
-        ),
-      ],
-    );
-  }
-
-  String _getRatingText(int rating) {
-    switch (rating) {
-      case 1:
-        return 'Muito Ruim';
-      case 2:
-        return 'Ruim';
-      case 3:
-        return 'Regular';
-      case 4:
-        return 'Bom';
-      case 5:
-        return 'Excelente';
-      default:
-        return '';
-    }
   }
 }
 

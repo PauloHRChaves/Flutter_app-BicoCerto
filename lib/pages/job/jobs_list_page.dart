@@ -1068,7 +1068,18 @@ class JobCard extends StatelessWidget {
                     ],
                   ),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => JobDetailsPage(job: job),
+                        ),
+                      );
+
+                      if (result == true && onUpdate != null) {
+                        onUpdate!();
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 74, 58, 255),
                       shape: RoundedRectangleBorder(
