@@ -35,15 +35,10 @@ class LoginPageState extends State<LoginPage> {
     // Valida o formulário antes de tentar o login
     if (_formKey.currentState!.validate()) {
       try {
-        // Uso da API: Chama o método para obter informações do dispositivo
-        final Map<String, dynamic> deviceInfo = await _authService
-            .getDeviceInfo();
-
         // Uso da API: Chama o método de login do AuthService, passando os dados
         await _authService.login(
           email: _emailController.text,
           password: _passwordController.text,
-          deviceInfo: deviceInfo,
         );
 
         if (mounted) {
@@ -52,10 +47,11 @@ class LoginPageState extends State<LoginPage> {
           );
           final chatController = context.read<ChatRoomsController>();
           await chatController.initialize();
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => const HomePage(isLoggedIn: true),
             ),
+            (Route<dynamic> route) => false, 
           );
 
         }
@@ -249,7 +245,7 @@ class LoginPageState extends State<LoginPage> {
                       child: Text(
                         'Ainda não possui uma conta? Cadastre-se',
                         style: TextStyle(
-                          fontSize: font,
+                          fontSize: 15,
                           fontFamily: 'Inter',
                           color: const Color.fromARGB(255, 8, 109, 163),
                         ),

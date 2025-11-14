@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart'; // Rotas nomeadas
 import 'package:bico_certo/services/auth_service.dart'; // Serviço de API
-
+import 'package:bico_certo/pages/wallet/wallet_tutorial_modal.dart';
 // --- CONSTANTES DE COR ---
 const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
 const Color darkText = Color.fromARGB(255, 30, 30, 30);
@@ -80,6 +80,21 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Color.fromARGB(255, 255, 255, 255)),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            tooltip: 'Ajuda',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true, 
+                backgroundColor: Colors.transparent,
+                builder: (context) => const WalletTutorialModal(),
+              );
+            },
+          ),
+        ],
+
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -133,10 +148,18 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
               const SizedBox(height: 20),
               // Botão Importar
               TextButton(
-                onPressed: () {
-                  // Navega para a proxima pagina import wallet page:
-                  Navigator.pushNamed(context, AppRoutes.importWalletPage);
+                
+                onPressed: () async {
+                  
+                  final result = await Navigator.pushNamed(context, AppRoutes.importWalletPage);
+
+                  
+                  if (result == true && mounted) {
+                    
+                    Navigator.pushReplacementNamed(context, AppRoutes.walletPage);
+                  }
                 },
+                
                 child: const Text("Importar Carteira Existente", style: TextStyle(color: primaryBlue)),
               ),
             ],

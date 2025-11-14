@@ -6,13 +6,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'chat_api_service.dart'; // Import necessário
+import 'chat_api_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 // TODA LOGICA DE COMUNICAÇÃO COM BACKEND
 
 class AuthService {
-  // Use o endereço do emulador Android para se conectar à sua máquina.
   final String baseUrl = dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:8000'; // Fallback para dev
   final _storage = const FlutterSecureStorage();
 
@@ -22,36 +22,29 @@ class AuthService {
   
   // Salva o token de acesso no armazenamento seguro do dispositivo
   Future<void> saveToken(String token) async {
-    print("🔑 [AuthService] SALVANDO token: $token"); // <-- PRINT DE DEBUG
     await _storage.write(key: 'access_token', value: token);
-    print("🔑 [AuthService] Token salvo!"); // <-- PRINT DE DEBUG
   }
 
   // Recupera o token de acesso
   Future<String?> getToken() async {
-    print("🔑 [AuthService] LENDO token..."); // <-- PRINT DE DEBUG
     final token = await _storage.read(key: 'access_token');
-    print("🔑 [AuthService] Token encontrado: ${token != null ? 'Sim' : 'Não'}"); // <-- PRINT DE DEBUG
     return token;
   }
 
   // Deleta o token
   Future<void> deleteToken() async {
-    print("🔑 [AuthService] DELETANDO token..."); // <-- PRINT DE DEBUG
     await _storage.delete(key: 'access_token');
-    print("🔑 [AuthService] Token deletado."); // <-- PRINT DE DEBUG
   }
   
   // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
     final bool status = token != null;
-    print("🔑 [AuthService] Status de login: $status"); // <-- PRINT DE DEBUG
     return status;
   }
 
   // ----------------------------------------------------------------------
-  // MÉTODOS DE ARMAZENAMENTO ADICIONAIS (MANTIDOS)
+  // MÉTODOS DE ARMAZENAMENTO ADICIONAIS
   // ----------------------------------------------------------------------
 
   Future<void> saveUserId(String id) async {
@@ -232,8 +225,10 @@ class AuthService {
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
-    required Map<String, dynamic> deviceInfo,
   }) async {
+    
+    final Map<String, dynamic> deviceInfo = await getDeviceInfo();
+
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: <String, String>{
@@ -273,15 +268,45 @@ class AuthService {
     }
   }
 
+  
   // Simulação de informações de device - MOCK
+  // Future<Map<String, dynamic>> getDeviceInfo() async {
+  //   return {
+  //     "device_id": "generic-test-device-id",
+  //     "platform": "generic-test-platform",
+  //     "model": "Flutter Test Model",
+  //     "os_version": "1.0",
+  //     "app_version": "1.0.0"
+  //   };
+  // } 
+  
+
   Future<Map<String, dynamic>> getDeviceInfo() async {
-    return {
-      "device_id": "generic-test-device-id",
-      "platform": "generic-test-platform",
-      "model": "Flutter Test Model",
-      "os_version": "1.0",
-      "app_version": "1.0.0"
-    };
+    final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+    Map<String, dynamic> deviceData;
+
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfoPlugin.androidInfo;
+      deviceData = {
+        "device_id": androidInfo.id,
+        "platform": "Android",
+        "model": androidInfo.model,
+        "os_version": androidInfo.version.release,
+        "app_version": "1.0.0"
+      };
+    } else if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfoPlugin.iosInfo;
+      deviceData = {
+        "device_id": iosInfo.identifierForVendor,
+        "platform": "iOS",
+        "model": iosInfo.model,
+        "os_version": iosInfo.systemVersion,
+        "app_version": "1.0.0"
+      };
+    } else {
+      deviceData = {};
+    }
+    return deviceData;
   }
 
   Future<void> logout() async {
