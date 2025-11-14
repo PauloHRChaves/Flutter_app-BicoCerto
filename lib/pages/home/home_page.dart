@@ -92,7 +92,7 @@ class HowItWorksStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        height: 120,
+        height: 125,
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 255, 255, 255),
           borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -259,7 +259,7 @@ class _HomePageState extends State<HomePage> {
                   TextSpan(
                     // Estilo base aplicado a todo o TextSpan, a menos que seja sobrescrito
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Color.fromARGB(
                         255,
@@ -432,7 +432,7 @@ class _HomePageState extends State<HomePage> {
                           child: Text(
                             'Faça Login para ter total acesso ao App !',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               color: const Color.fromARGB(186, 39, 39, 39),
                               fontWeight: FontWeight.w600,
                             ),
@@ -453,7 +453,7 @@ class _HomePageState extends State<HomePage> {
                             Radius.circular(10),
                           ),
                         ),
-                        height: 115,
+                        height: 120,
                         child: Padding(
                           padding: EdgeInsetsGeometry.symmetric(horizontal: 0),
                           child: ListView(

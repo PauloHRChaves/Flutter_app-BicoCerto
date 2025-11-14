@@ -245,7 +245,7 @@ class LoginPageState extends State<LoginPage> {
                       child: Text(
                         'Ainda não possui uma conta? Cadastre-se',
                         style: TextStyle(
-                          fontSize: font,
+                          fontSize: 15,
                           fontFamily: 'Inter',
                           color: const Color.fromARGB(255, 8, 109, 163),
                         ),

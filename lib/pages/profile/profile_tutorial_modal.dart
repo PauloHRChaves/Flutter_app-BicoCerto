@@ -40,7 +40,7 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 550, 
+      height: 570,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
@@ -51,7 +51,7 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
       child: Column(
         children: [
           const SizedBox(height: 10),
-          
+
           Container(
             width: 40,
             height: 5,
@@ -71,7 +71,7 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
               ),
             ),
           ),
-          
+
           Expanded(
             child: PageView.builder(
               controller: _pageController,
@@ -83,7 +83,7 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
               itemCount: _tutorialSteps.length,
               itemBuilder: (context, index) {
                 final step = _tutorialSteps[index];
-                
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Column(
@@ -93,7 +93,11 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
                       CircleAvatar(
                         radius: 45,
                         backgroundColor: step['color'].withOpacity(0.1),
-                        child: Icon(step['icon'], size: 45, color: step['color']),
+                        child: Icon(
+                          step['icon'],
+                          size: 45,
+                          color: step['color'],
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -108,9 +112,9 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
                       const SizedBox(height: 20),
                       Text(
                         step['description'],
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.start,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           height: 1.5,
                           color: Colors.black87,
                         ),
@@ -123,7 +127,6 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
             ),
           ),
 
-          
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
@@ -143,7 +146,7 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: SizedBox(
@@ -158,8 +161,8 @@ class _ProfileTutorialModalState extends State<ProfileTutorialModal> {
                 ),
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
-                  "Entendi", 
-                  style: TextStyle(color: Colors.white, fontSize: 16)
+                  "Entendi",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ),

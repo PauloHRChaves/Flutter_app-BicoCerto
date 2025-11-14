@@ -1,5 +1,3 @@
-// ⚠️ ESTA PAGINA DEVE SER VISIVEL APENAS PELO DONO DA MESMA ⚠️
-
 import 'package:bico_certo/pages/dashboard/client_dashboard_page.dart';
 import 'package:bico_certo/pages/profile/profile_tutorial_modal.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +9,7 @@ import 'package:bico_certo/pages/wallet/wallet_page.dart';
 import 'package:bico_certo/pages/wallet/create_wallet_page.dart';
 import 'package:bico_certo/pages/profile/edit_profile_page.dart';
 import '../dashboard/provider_dashboard_page.dart';
+import '../../utils/string_formatter.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -28,12 +27,13 @@ void _handleLogout(BuildContext context) async {
 
 class _SetProfileState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
-
+  
+  List<Map<String, dynamic>> _transactions = [];
+  
   bool _isLoading = true;
   String _errorMessage = '';
 
   // Dados do Perfil (do /auth/me)
-  String _id = '...';
   String _fullName = '...';
   String _city = '...';
   String _state = '...';
@@ -41,10 +41,6 @@ class _SetProfileState extends State<ProfilePage> {
   // URL de Imagem Padrão
   String _imgUrl =
       "https://img.freepik.com/vetores-premium/uma-silhueta-azul-do-rosto-de-uma-pessoa-contra-um-fundo-branco_754208-70.jpg?w=2000";
-
-  // Dados de Stats (do /provider/dashboard/quick-stats)
-  int _jobdone = 0;
-  double _estrelas = 0.0;
 
   @override
   void initState() {
@@ -60,7 +56,6 @@ class _SetProfileState extends State<ProfilePage> {
     });
 
     String? profileError;
-    String? statsError;
 
     try {
       final userData = await _authService.getUserProfile();
@@ -76,7 +71,6 @@ class _SetProfileState extends State<ProfilePage> {
     
       setState(() {
         _fullName = userProfile['full_name'] ?? 'Usuário';
-        _id = userProfile['id'] ?? '...';
         _city = userProfile['city'] ?? 'Cidade'; 
         _state = userProfile['state'] ?? ''; 
         _description = userProfile['description'] ?? 'Sem descrição.';
@@ -87,27 +81,7 @@ class _SetProfileState extends State<ProfilePage> {
       });
     } catch (e) {
       profileError = 'Falha grave ao carregar o seu perfil.';
-      print('Erro em getUserProfile: $e');
     }
-
-    try {
-      final statsData = await _authService.getProviderQuickStats();
-      if (!mounted) return;
-
-      setState(() {
-        _jobdone = (statsData['completedJobs'] as num?)?.toInt() ?? 0;
-        _estrelas = (statsData['rating'] as num?)?.toDouble() ?? 0.0;
-      });
-    } catch (e) {
-      statsError = 'Falha ao carregar estatísticas (carteira pode não existir).';
-      print('Erro em getProviderQuickStats: $e');
-      
-      setState(() {
-        _jobdone = 0;
-        _estrelas = 0.0;
-      });
-    }
-
     
     if (!mounted) return;
     setState(() {
@@ -116,9 +90,6 @@ class _SetProfileState extends State<ProfilePage> {
       if (profileError != null) {
         _errorMessage = profileError;
         _fullName = 'Erro';
-      } else if (statsError != null) {
-        
-        print(statsError); 
       }
     });
   }
@@ -147,101 +118,6 @@ class _SetProfileState extends State<ProfilePage> {
         );
       }
     }
-  }
-
-  // jobdone
-  Widget _buildStatCard({
-    required String title,
-    required int value,
-    required Color color,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double minimalfont = screenWidth * 0.034;
-
-    return Expanded(
-      child: Container(
-        height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.grey, spreadRadius: 1, blurRadius: 3),
-          ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              value.toString().padLeft(2, '0'),
-              style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: minimalfont,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // estrelas
-  Widget _buildStarCard({
-    required String title,
-    required double value,
-    required Color color,
-    bool isRating = false,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double minimalfont = screenWidth * 0.034;
-
-    return Expanded(
-      child: Container(
-        height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 30),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.grey, spreadRadius: 1, blurRadius: 3),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (int i = 0; i < 5; i++)
-                  Icon(
-                    i < (value) ? Icons.star : Icons.star_border,
-                    color: color,
-                    size: 20,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: minimalfont,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildActionButton({
@@ -314,6 +190,7 @@ class _SetProfileState extends State<ProfilePage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    bool isHistoryLoading = true;
     const double avatarSize = 100.0;
 
     final double fonttitle = screenWidth * 0.044;
@@ -324,7 +201,7 @@ class _SetProfileState extends State<ProfilePage> {
     const Color darkText = Color.fromARGB(255, 30, 30, 30);
 
     return AuthGuard(
-        child: Scaffold(
+      child: Scaffold(
       backgroundColor: lightBackground,
       appBar: AppBar(
         backgroundColor: Color.fromARGB(255, 15, 73, 131),
@@ -578,7 +455,7 @@ class _SetProfileState extends State<ProfilePage> {
                       ),
                     ),
                   ],
-                ),
+                ),     
       bottomNavigationBar: CustomBottomNavBar(
         
         currentIndex: 3,

@@ -22,31 +22,24 @@ class AuthService {
   
   // Salva o token de acesso no armazenamento seguro do dispositivo
   Future<void> saveToken(String token) async {
-    print("🔑 [AuthService] SALVANDO token: $token"); // <-- PRINT DE DEBUG
     await _storage.write(key: 'access_token', value: token);
-    print("🔑 [AuthService] Token salvo!"); // <-- PRINT DE DEBUG
   }
 
   // Recupera o token de acesso
   Future<String?> getToken() async {
-    print("🔑 [AuthService] LENDO token..."); // <-- PRINT DE DEBUG
     final token = await _storage.read(key: 'access_token');
-    print("🔑 [AuthService] Token encontrado: ${token != null ? 'Sim' : 'Não'}"); // <-- PRINT DE DEBUG
     return token;
   }
 
   // Deleta o token
   Future<void> deleteToken() async {
-    print("🔑 [AuthService] DELETANDO token..."); // <-- PRINT DE DEBUG
     await _storage.delete(key: 'access_token');
-    print("🔑 [AuthService] Token deletado."); // <-- PRINT DE DEBUG
   }
   
   // Verifica se o usuário tem um token válido
   Future<bool> getAuthStatus() async {
     final token = await getToken();
     final bool status = token != null;
-    print("🔑 [AuthService] Status de login: $status"); // <-- PRINT DE DEBUG
     return status;
   }
 
