@@ -28,7 +28,7 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
   }
 
   Future<void> _importWallet() async {
-    // Valida se os campos do formulário foram preenchidos
+    
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -38,12 +38,13 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
     });
 
     try {
+      
       await _authService.importWalletFromPrivateKey(
         privateKey: _privateKeyController.text,
         password: _passwordController.text,
       );
 
-      // Se a importação deu certo, mostra uma mensagem de sucesso
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -51,16 +52,10 @@ class _ImportWalletPageState extends State<ImportWalletPage> {
             backgroundColor: Colors.green,
           ),
         );
-
-        // Volta para ProfilePage
-        Navigator.of(context).pop(); // Remove ImportWalletPage
-        Navigator.of(context).pop(); // Remove CreateWalletPage
-
-        // Adiciona WalletPage
-        Navigator.pushNamed(context, AppRoutes.walletPage);
+        Navigator.pop(context, true);
       }
     } catch (e) {
-      // Se deu erro, mostra a mensagem de erro para o usuário
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -1,4 +1,3 @@
-// widgets/bottom_navbar.dart
 import 'package:flutter/material.dart';
 import 'package:bico_certo/routes.dart';
 
@@ -14,9 +13,9 @@ class CustomBottomNavBar extends StatelessWidget {
   });
 
   static const Color selectedColor = Color.fromARGB(255, 14, 67, 182);
-  static const Color unselectedColor = Color.fromARGB(212, 105, 105, 105);
-  static const Color barColor = Color.fromARGB(214, 255, 255, 255);
-  static const Color centerBottomColor = Color.fromARGB(255, 255, 145, 0);
+  static const Color unselectedColor = Color.fromARGB(210, 73, 73, 73);
+  static const Color barColor = Color.fromARGB(255, 252, 253, 255);
+  static const Color centerBottomColor = Color.fromARGB(255, 255, 157, 0);
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = currentIndex == index;
@@ -25,13 +24,12 @@ class CustomBottomNavBar extends StatelessWidget {
     return InkWell(
       onTap: () => onTap(index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 8.0),
-        constraints: const BoxConstraints(minWidth: 60),
+        constraints: const BoxConstraints(minWidth: 65),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Icon(icon, color: color, size: 28),
+            Icon(icon, color: color, size: 31),
             Text(
               label,
               style: TextStyle(
@@ -53,7 +51,6 @@ class CustomBottomNavBar extends StatelessWidget {
 
     return BottomAppBar(
       color: barColor,
-      height: screenHeight * 0.104,
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
       elevation: 10.0,
@@ -67,17 +64,19 @@ class CustomBottomNavBar extends StatelessWidget {
             _buildNavItem(Icons.home_filled, "Início", 0),
             _buildNavItem(Icons.list, "Pedidos", 1),
 
-            IconButton(
-              icon: const Icon(
-                Icons.add_circle,
-                size: 60,
-                color: centerBottomColor,
+            Transform.translate(
+              offset: const Offset(0.0, -18.0),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.add_circle,
+                  size: 65,
+                  color: centerBottomColor,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushNamed(AppRoutes.orderInfoPage);
+                },
+                tooltip: 'Nova Ação',
               ),
-              onPressed: () {
-                Navigator.of(context).pushNamed(AppRoutes.orderInfoPage);
-              },
-              tooltip: 'Nova Ação',
-              padding: const EdgeInsets.only(bottom: 20),
             ),
 
             _buildNavItem(Icons.message_outlined, "Chats", 2),
