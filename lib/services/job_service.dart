@@ -278,6 +278,78 @@ class JobService {
     }
   }
 
+  Future<Map<String, dynamic>> cancelOpenJob({
+    required String jobId,
+    required String password,
+  }) async {
+    try {
+
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/jobs/cancel-open'),
+        headers: headers,
+        body: json.encode({
+          'job_id': jobId,
+          'password': password,
+        }),
+      );
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Job cancelado com sucesso!',
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erro ao cancelar job',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Erro ao cancelar job: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> rejectJob({
+    required String jobId,
+    required String password,
+  }) async {
+    try {
+
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/jobs/reject-job'),
+        headers: headers,
+        body: json.encode({
+          'job_id': jobId,
+          'password': password,
+        }),
+      );
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Job rejeitado com sucesso!',
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erro ao rejeitado job',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Erro ao rejeitado job: $e',
+      };
+    }
+  }
+
   Future<Map<String, dynamic>> rejectProposal({
     required String proposalId,
     required String password,
