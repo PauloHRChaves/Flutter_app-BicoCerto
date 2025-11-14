@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/services/job_service.dart';
 import 'package:bico_certo/pages/job/job_details_page.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../../services/chat_api_service.dart';
 import '../../services/location_service.dart';
 import '../../utils/string_formatter.dart';
 
@@ -25,6 +29,8 @@ class _JobsListPageState extends State<JobsListPage> {
   final JobService _jobService = JobService();
   final LocationService _locationService = LocationService();
   final TextEditingController _searchController = TextEditingController();
+  WebSocketChannel? _websocketChannel;
+  final ChatApiService _chatApiService = ChatApiService();
 
   List<Job> _jobs = [];
   List<Job> _filteredJobs = [];
@@ -41,15 +47,6 @@ class _JobsListPageState extends State<JobsListPage> {
   double? _maxBudget;
   String _sortBy = 'recent';
 
-  final List<String> _categoryList = ['Reformas',
-    'Assistência Técnica',
-    'Aulas Particulares',
-    'Design',
-    'Consultoria',
-    'Elétrica',
-    'Faxina',
-    'Pintura'];
-
   @override
   void initState() {
     super.initState();
@@ -58,6 +55,7 @@ class _JobsListPageState extends State<JobsListPage> {
     _searchController.text = widget.searchTerm ?? '';
     _loadUserWallet();
     _loadJobs();
+    _connectWebSocket();
   }
 
   Future<void> _loadUserWallet() async {
@@ -72,7 +70,79 @@ class _JobsListPageState extends State<JobsListPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _websocketChannel?.sink.close();
     super.dispose();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return;
+
+      _websocketChannel = await _chatApiService.connectNotificationsWebSocket();
+      _websocketChannel!.stream.listen(
+            (message) {
+          _handleWebSocketMessage(message);
+        },
+        onError: (error) {
+          print('Erro no WebSocket: $error');
+        },
+      );
+    } catch (e) {
+      print('Erro ao conectar WebSocket: $e');
+    }
+  }
+
+  void _handleWebSocketMessage(dynamic message) {
+    try {
+      final data = jsonDecode(message);
+      final type = data['type'];
+
+      if (type == 'job_status_update') {
+        final updateData = data['data'];
+        final jobId = updateData['job_id'];
+
+        _removeJobIfNotOpen(jobId);
+      }
+    } catch (e) {
+      print('Erro ao processar mensagem WebSocket: $e');
+    }
+  }
+
+  Future<void> _removeJobIfNotOpen(String jobId) async {
+    try {
+      final jobIndex = _jobs.indexWhere((job) => job.jobId == jobId);
+
+      if (jobIndex != -1) {
+        final updatedJob = await _jobService.getJobById(jobId);
+
+        if (updatedJob != null && updatedJob.status != JobStatus.open && mounted) {
+          setState(() {
+            _jobs.removeAt(jobIndex);
+            _applyFilters();
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Um job foi atualizado e removido da listagem'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange[700],
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Erro ao verificar status do job: $e');
+    }
   }
 
   Future<String> _resolveLocation(String locationString) async {
@@ -196,7 +266,7 @@ class _JobsListPageState extends State<JobsListPage> {
         minBudget: _minBudget,
         maxBudget: _maxBudget,
         sortBy: _sortBy,
-        categories: _categoryList,
+        categories: Job.categoryList,
         onApply: (category, minBudget, maxBudget, sortBy) {
           setState(() {
             _selectedCategory = category;
@@ -989,7 +1059,18 @@ class JobCard extends StatelessWidget {
                     ],
                   ),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => JobDetailsPage(job: job),
+                        ),
+                      );
+
+                      if (result == true && onUpdate != null) {
+                        onUpdate!();
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 74, 58, 255),
                       shape: RoundedRectangleBorder(

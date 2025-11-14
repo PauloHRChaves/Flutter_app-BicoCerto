@@ -191,45 +191,84 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     }
   }
 
-  Future<void> _showRateClientDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _RateClientDialog(clientName: _currentJob.metadata.data.employer.name ?? 'Cliente'),
-    );
-
-    if (result == null) return;
-
-    final password = result['password'] as String;
-    final rating = result['rating'] as int;
+  Future<void> _cancelOpenJob() async {
+    final password = await _showCancelOpenJobDialog();
+    if (password == null || password.isEmpty) return;
 
     _showLoadingDialog();
 
     try {
-      final response = await _jobService.rateClient(
+      final result = await _jobService.cancelOpenJob(
         jobId: _currentJob.jobId,
-        rating: rating,
         password: password,
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // Fechar loading
+      Navigator.pop(context);
 
-      if (response['success'] == true) {
-        _showSuccessSnackBar(response['message'] ?? 'Cliente avaliado com sucesso!');
+      if (result['success'] == true) {
+        _showSuccessSnackBar(result['message'] ?? 'Job cancelado com sucesso!');
+
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
-          _reloadJobDetails();
+          Navigator.pop(context, true);
         }
       } else {
-        _showErrorSnackBar(response['message'] ?? 'Erro ao avaliar cliente');
+        _showErrorSnackBar(result['message'] ?? 'Erro ao cancelar job');
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        _showErrorSnackBar('Erro ao avaliar cliente: $e');
+        _showErrorSnackBar('Erro ao cancelar job: $e');
       }
     }
+  }
+
+  Future<String?> _showCancelOpenJobDialog() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => const _CancelOpenJobDialog(),
+    );
+  }
+
+  Future<void> _rejectJob() async {
+    final password = await _showRejectJobDialog();
+    if (password == null || password.isEmpty) return;
+
+    _showLoadingDialog();
+
+    try {
+      final result = await _jobService.rejectJob(
+        jobId: _currentJob.jobId,
+        password: password,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        _showSuccessSnackBar(result['message'] ?? 'Job rejeitado com sucesso!');
+
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Erro ao rejeitar job');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        _showErrorSnackBar('Erro ao rejeitar job: $e');
+      }
+    }
+  }
+
+  Future<String?> _showRejectJobDialog() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => const _RejectJobDialog(),
+    );
   }
 
   void _handleWebSocketMessage(dynamic message) {
@@ -240,65 +279,30 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       if (type == 'job_status_update') {
         final updateData = data['data'];
         final jobId = updateData['job_id'];
-        final status = updateData['status'];
 
         if (jobId == _currentJob.jobId) {
-          // Se for notificação para avaliar cliente
-          if (status == 'rate_client_prompt') {
-            if (mounted) {
-              // Mostrar SnackBar
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.white),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          updateData['message'] ?? 'Avalie o cliente',
-                          style: const TextStyle(color: Colors.white),
-                        ),
+          // Outras notificações
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.update, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        updateData['message'] ?? 'Job atualizado',
+                        style: const TextStyle(color: Colors.white),
                       ),
-                    ],
-                  ),
-                  backgroundColor: Colors.amber[700],
-                  duration: const Duration(seconds: 4),
-                  behavior: SnackBarBehavior.floating,
+                    ),
+                  ],
                 ),
-              );
-
-              // Abrir modal automaticamente
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  _showRateClientDialog();
-                }
-              });
-            }
-          } else {
-            // Outras notificações
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(Icons.update, color: Colors.white),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          updateData['message'] ?? 'Job atualizado',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: Colors.blue[700],
-                  duration: const Duration(seconds: 4),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
+                backgroundColor: Colors.blue[700],
+                duration: const Duration(seconds: 4),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
-
           _reloadJobDetails();
         }
       }
@@ -344,45 +348,6 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       });
     }
   }
-
-  // Future<void> _rateClient() async {
-  //   final result = await _showRateClientDialog();
-  //   if (result == null) return;
-  //
-  //   final password = result['password'] as String;
-  //   final rating = result['rating'] as int;
-  //
-  //   _showLoadingDialog();
-  //
-  //   try {
-  //     final result = await _jobService.rateClient(
-  //       jobId: _currentJob.jobId,
-  //       rating: rating,
-  //       password: password,
-  //     );
-  //
-  //     if (!mounted) return;
-  //     Navigator.pop(context);
-  //
-  //     if (result['success'] == true) {
-  //       _showSuccessSnackBar(result['message'] ?? 'Cliente avaliado com sucesso!');
-  //     } else {
-  //       _showErrorSnackBar(result['message'] ?? 'Erro ao avaliar cliente');
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       Navigator.pop(context);
-  //       _showErrorSnackBar('Erro ao avaliar cliente: $e');
-  //     }
-  //   }
-  // }
-
-  // Future<Map<String, dynamic>?> _showRateClientDialog() {
-  //   return showDialog<Map<String, dynamic>>(
-  //     context: context,
-  //     builder: (context) => const _RateClientDialog(),
-  //   );
-  // }
 
   Future<void> _approveJob() async {
     final result = await _showApproveJobDialog();
@@ -706,6 +671,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     final hasActiveProposal = ProposalStatusHelpers.isActiveProposal(_myProposal);
     final isLoading = _isCheckingOwner || _isLoadingProposal;
     final isInProgress = _currentJob.status != JobStatus.open;
+    final isCanceled = _currentJob.status == JobStatus.cancelled;
     final isAcceptedOrInProgress = _currentJob.status == JobStatus.accepted ||
         _currentJob.status == JobStatus.inProgress;
 
@@ -728,11 +694,13 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                     _OwnerSection(
                       job: _currentJob,
                       proposalCount: _proposalCount,
+                      onCancelJob: _cancelOpenJob,
                     ),
                     if (_isJobOwner && _currentJob.status == JobStatus.completed)
                         _ApproveJobSection(
                         job: _currentJob,
                         onApproveJob: _approveJob,
+                        onRejectJob: _rejectJob,
                       ),
                   if (!_isJobOwner) ...[
                     if (isLoading)
@@ -763,7 +731,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   const SizedBox(height: AppDimensions.spacingLarge),
                   _InformationSection(job: _currentJob),
                   const SizedBox(height: AppDimensions.spacingLarge),
-                  if (_isJobOwner && isInProgress)
+                  if (_isJobOwner && isInProgress && !isCanceled)
                     _ProviderSection(
                       job: _currentJob,
                       isLoadingChat: _isLoadingChat,
@@ -1068,10 +1036,12 @@ class _ApprovalTimerCard extends StatelessWidget {
 class _OwnerSection extends StatelessWidget {
   final Job job;
   final int proposalCount;
+  final VoidCallback? onCancelJob; // ✅ ADICIONAR
 
   const _OwnerSection({
     required this.job,
     required this.proposalCount,
+    this.onCancelJob, // ✅ ADICIONAR
   });
 
   IconData _getJobStatusIcon(JobStatus status) {
@@ -1144,7 +1114,7 @@ class _OwnerSection extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              if (!isInProgress)
+              if (!isInProgress) ...[
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -1177,6 +1147,24 @@ class _OwnerSection extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onCancelJob,
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Cancelar Pedido'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Colors.red, width: 2),
+                      foregroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -2979,10 +2967,12 @@ class _ProposalFormState extends State<_ProposalForm> {
 class _ApproveJobSection extends StatelessWidget {
   final Job job;
   final VoidCallback onApproveJob;
+  final VoidCallback onRejectJob;
 
   const _ApproveJobSection({
     required this.job,
     required this.onApproveJob,
+    required this.onRejectJob,
   });
 
   Map<String, dynamic>? _getApprovalDeadlineInfo() {
@@ -3082,7 +3072,7 @@ class _ApproveJobSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           isExpired
-                              ? 'Aprove o trabalho o quanto antes'
+                              ? 'Aprove ou rejeite o trabalho'
                               : 'O prestador concluiu o trabalho',
                           style: TextStyle(
                             fontSize: 12,
@@ -3128,22 +3118,42 @@ class _ApproveJobSection extends StatelessWidget {
               ],
 
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: onApproveJob,
-                  icon: const Icon(Icons.verified, color: Colors.white),
-                  label: const Text('Aprovar e Liberar Pagamento'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isExpired ? Colors.red[600] : Colors.blue[600],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onRejectJob,
+                      icon: const Icon(Icons.close),
+                      label: const Text('Rejeitar'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.red, width: 2),
+                        foregroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                        ),
+                      ),
                     ),
-                    elevation: 2,
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: onApproveJob,
+                      icon: const Icon(Icons.verified, color: Colors.white),
+                      label: const Text('Aprovar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isExpired ? Colors.red[600] : Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 8),
@@ -3163,7 +3173,7 @@ class _ApproveJobSection extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Ao aprovar, você avaliará o trabalho e o pagamento será liberado automaticamente para o prestador.',
+                        'Ao aprovar, você avaliará o trabalho e liberará o pagamento. Ao rejeitar, o trabalho voltará para o status "Em Progresso".',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[700],
@@ -3552,20 +3562,16 @@ class _CompleteJobDialogState extends State<_CompleteJobDialog> {
   }
 }
 
-
-class _RateClientDialog extends StatefulWidget {
-  final String clientName;
-
-  const _RateClientDialog({required this.clientName});
+class _CancelOpenJobDialog extends StatefulWidget {
+  const _CancelOpenJobDialog();
 
   @override
-  State<_RateClientDialog> createState() => _RateClientDialogState();
+  State<_CancelOpenJobDialog> createState() => _CancelOpenJobDialogState();
 }
 
-class _RateClientDialogState extends State<_RateClientDialog> {
+class _CancelOpenJobDialogState extends State<_CancelOpenJobDialog> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  int _rating = 3;
 
   @override
   void dispose() {
@@ -3579,97 +3585,69 @@ class _RateClientDialogState extends State<_RateClientDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      title: Row(
+      title: const Row(
         children: [
-          Icon(Icons.star, color: Colors.amber[700]),
-          const SizedBox(width: AppDimensions.spacing),
-          const Text('Avaliar Cliente'),
+          Icon(Icons.warning_amber, color: Colors.orange),
+          SizedBox(width: AppDimensions.spacing),
+          Expanded(child: Text('Cancelar Job')),
         ],
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'O trabalho foi aprovado! Avalie ${widget.clientName}:',
-              style: const TextStyle(fontSize: 14),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tem certeza que deseja cancelar este job? O valor depositado será devolvido para sua carteira.',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange[300]!),
             ),
-            const SizedBox(height: 20),
-
-            // Avaliação com estrelas
-            const Text(
-              'Como foi trabalhar com este cliente?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < _rating ? Icons.star : Icons.star_border,
-                      size: 40,
-                      color: Colors.amber[700],
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: Colors.orange[700]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Esta ação não pode ser desfeita.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange[900],
+                      fontWeight: FontWeight.w600,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _rating = index + 1;
-                      });
-                    },
-                  );
-                }),
-              ),
-            ),
-            Center(
-              child: Text(
-                _getRatingText(_rating),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[700],
+                  ),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Senha da Carteira',
+              hintText: 'Digite sua senha',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+              ),
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Campo de senha
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Senha da Carteira',
-                hintText: 'Digite sua senha',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-                ),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Você pode avaliar o cliente agora ou fechar este modal e avaliar depois.',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Avaliar Depois'),
+          child: const Text('Voltar'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -3682,35 +3660,126 @@ class _RateClientDialogState extends State<_RateClientDialog> {
               );
               return;
             }
-            Navigator.pop(context, {
-              'password': _passwordController.text,
-              'rating': _rating,
-            });
+            Navigator.pop(context, _passwordController.text);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber[700],
+            backgroundColor: Colors.red,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Avaliar Agora'),
+          child: const Text('Confirmar Cancelamento'),
         ),
       ],
     );
   }
+}
 
-  String _getRatingText(int rating) {
-    switch (rating) {
-      case 1:
-        return 'Muito Ruim';
-      case 2:
-        return 'Ruim';
-      case 3:
-        return 'Regular';
-      case 4:
-        return 'Bom';
-      case 5:
-        return 'Excelente';
-      default:
-        return '';
-    }
+class _RejectJobDialog extends StatefulWidget {
+  const _RejectJobDialog();
+
+  @override
+  State<_RejectJobDialog> createState() => _RejectJobDialogState();
+}
+
+class _RejectJobDialogState extends State<_RejectJobDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.cancel, color: Colors.red),
+          SizedBox(width: AppDimensions.spacing),
+          Expanded(child: Text('Rejeitar Trabalho')),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tem certeza que deseja rejeitar este trabalho? O trabalho voltará para o estado anterior, só sendo possivel aprovar quando o prestador finalizar novamente.',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red[300]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning, size: 18, color: Colors.red[700]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Use esta opção apenas se o trabalho não foi realizado adequadamente.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red[900],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Senha da Carteira',
+              hintText: 'Digite sua senha',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+              ),
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Voltar'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_passwordController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Por favor, digite sua senha'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            Navigator.pop(context, _passwordController.text);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Confirmar Rejeição'),
+        ),
+      ],
+    );
   }
 }

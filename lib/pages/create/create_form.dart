@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:bico_certo/services/auth_guard.dart';
 import 'package:bico_certo/widgets/password_request.dart';
 import 'package:bico_certo/widgets/photo_createjob.dart';
+import '../../models/job_model.dart';
 import '../../models/location_suggestion.dart';
 import '../../services/location_service.dart';
 import '../../widgets/location_field_with_map.dart';
@@ -80,18 +81,11 @@ class _CreateOrderPageState extends State<CreateJobPage> {
   final TextEditingController _locationJobController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
 
-  String? _selectedCategory; // Estado da Categoria (Dropdown)
-  String _selectedDateFormated = '';
+  String? _selectedCategory;
   DateTime? _selectedDate;
 
   double? _selectedLatitude;
   double? _selectedLongitude;
-  String? _fullLocationAddress;
-
-  // Lista de categorias (para o Dropdown)
-  final List<String> _categories = [
-    'Reformas', 'Assistência Técnica', 'Aulas Particulares', 'Design', 'Consultoria', 'Elétrica'
-  ];
   final List<File> _jobPhotos = [];
   final ImagePicker _picker = ImagePicker();
 
@@ -157,7 +151,6 @@ class _CreateOrderPageState extends State<CreateJobPage> {
 
       setState(() {
         _selectedDate = picked;
-        _selectedDateFormated = formattedDate;
       });
     }
   }
@@ -179,7 +172,6 @@ class _CreateOrderPageState extends State<CreateJobPage> {
     setState(() {
       _selectedLatitude = location.lat;
       _selectedLongitude = location.lon;
-      _fullLocationAddress = location.displayName;
     });
   }
 
@@ -434,7 +426,7 @@ class _CreateOrderPageState extends State<CreateJobPage> {
                   _selectedCategory = newValue;
                 });
               },
-              items: _categories.map<DropdownMenuItem<String>>((String value) {
+              items: Job.categoryList.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),

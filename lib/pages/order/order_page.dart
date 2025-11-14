@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:bico_certo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/services/proposal_service.dart';
@@ -5,7 +7,8 @@ import 'package:bico_certo/services/job_service.dart';
 import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/routes.dart';
 import 'package:bico_certo/widgets/bottom_navbar.dart';
-
+import 'package:web_socket_channel/web_socket_channel.dart';
+import '../../services/chat_api_service.dart';
 import '../../utils/string_formatter.dart';
 import '../../widgets/status_badge.dart';
 import '../job/job_details_page.dart';
@@ -23,6 +26,10 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   final ProposalService _proposalService = ProposalService();
   final JobService _jobService = JobService();
   final AuthService _authService = AuthService();
+
+  final ChatApiService _chatApiService = ChatApiService();
+
+  WebSocketChannel? _websocketChannel;
 
   bool _isLoadingProposals = true;
   bool _isLoadingJobs = true;
@@ -48,28 +55,126 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   String _jobSortBy = 'recent';
   Set<JobStatus> _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress, JobStatus.completed};
 
-  final List<String> _categoryList = [
-    'Reformas',
-    'Assistência Técnica',
-    'Aulas Particulares',
-    'Design',
-    'Consultoria',
-    'Elétrica',
-    'Faxina',
-    'Pintura'
-  ];
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
+    _connectWebSocket();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _websocketChannel?.sink.close();
     super.dispose();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return;
+
+      _websocketChannel = await _chatApiService.connectNotificationsWebSocket();
+
+      _websocketChannel!.stream.listen(
+            (message) {
+          _handleWebSocketMessage(message);
+        },
+        onError: (error) {
+          print('Erro no WebSocket: $error');
+        },
+      );
+    } catch (e) {
+      print('Erro ao conectar WebSocket: $e');
+    }
+  }
+
+  void _handleWebSocketMessage(dynamic message) {
+    try {
+      final data = jsonDecode(message);
+      final type = data['type'];
+
+      if (type == 'job_status_update') {
+        final updateData = data['data'];
+        final jobId = updateData['job_id'];
+        final status = updateData['status'];
+
+        _updateJobInList(jobId);
+        _updateProposalByJobId(jobId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.update, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      updateData['message'] ?? 'Job atualizado',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.blue[700],
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Erro ao processar mensagem WebSocket: $e');
+    }
+  }
+
+  Future<void> _updateJobInList(String jobId) async {
+    try {
+      final jobIndex = _myJobs.indexWhere((job) => job.jobId == jobId);
+
+      if (jobIndex != -1) {
+
+        final updatedJob = await _jobService.getJobById(jobId);
+
+        if (updatedJob != null && mounted) {
+          setState(() {
+            _myJobs[jobIndex] = updatedJob;
+            _applyJobFilters();
+          });
+        }
+      }
+    } catch (e) {
+      print('Erro ao atualizar job: $e');
+    }
+  }
+
+  Future<void> _updateProposalByJobId(String jobId) async {
+    try {
+      final proposalIndex = _myProposals.indexWhere(
+              (proposal) => proposal['job']?['job_id'] == jobId
+      );
+
+      if (proposalIndex != -1) {
+        final result = await _proposalService.getMyProposals();
+
+        if (result['success'] == true && mounted) {
+          final proposals = List<Map<String, dynamic>>.from(result['proposals'] ?? []);
+          final updatedProposal = proposals.firstWhere(
+                (p) => p['job']?['job_id'] == jobId,
+            orElse: () => _myProposals[proposalIndex],
+          );
+
+          setState(() {
+            _myProposals[proposalIndex] = updatedProposal;
+            _applyProposalFilters();
+          });
+        }
+      }
+    } catch (e) {
+      print('Erro ao atualizar proposta: $e');
+    }
   }
 
   Future<void> _loadData() async {
@@ -260,7 +365,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         },
         onClear: () {
           setState(() {
-            _selectedStatuses = {'pending', 'accepted', 'rejected'};
+            _selectedStatuses = {'pending', 'accepted'};
             _minProposalAmount = null;
             _maxProposalAmount = null;
             _proposalSortBy = 'recent';
@@ -287,7 +392,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         minProposalCount: _minProposalCount,
         maxProposalCount: _maxProposalCount,
         sortBy: _jobSortBy,
-        categories: _categoryList,
+        categories: Job.categoryList,
         onApply: (statuses, category, minBudget, maxBudget, minProposals, maxProposals, sortBy) {
           setState(() {
             _selectedJobStatuses = statuses;
@@ -320,7 +425,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
 
   int _getActiveProposalFilterCount() {
     int count = 0;
-    if (_selectedStatuses.length < 4) count++;
+    if (_selectedStatuses.length != 2) count++;
     if (_minProposalAmount != null) count++;
     if (_maxProposalAmount != null) count++;
     if (_proposalSortBy != 'recent') count++;
@@ -329,7 +434,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
 
   int _getActiveJobFilterCount() {
     int count = 0;
-    if (_selectedJobStatuses.length != 1 || !_selectedJobStatuses.contains(JobStatus.open)) count++;
+    if (_selectedJobStatuses.length != 3 || !_selectedJobStatuses.contains(JobStatus.open)) count++;
     if (_selectedJobCategory != null) count++;
     if (_minJobBudget != null) count++;
     if (_maxJobBudget != null) count++;
@@ -527,7 +632,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         spacing: 8,
         runSpacing: 8,
         children: [
-          if (_selectedStatuses.length < 4)
+          if (_selectedStatuses.length != 2)
             Chip(
               avatar: const Icon(Icons.check_circle, size: 18),
               label: Text('${_selectedStatuses.length} status'),
@@ -535,7 +640,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () {
                 setState(() {
-                  _selectedStatuses = {'pending', 'accepted', 'rejected'};
+                  _selectedStatuses = {'pending', 'accepted'};
                 });
                 _applyProposalFilters();
               },
@@ -583,7 +688,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         spacing: 8,
         runSpacing: 8,
         children: [
-          if (_selectedJobStatuses.length != 1 || !_selectedJobStatuses.contains(JobStatus.open))
+          if (_selectedJobStatuses.length != 3 || !_selectedJobStatuses.contains(JobStatus.open))
             Chip(
               avatar: const Icon(Icons.filter_alt, size: 18),
               label: Text('${_selectedJobStatuses.length} status'),
@@ -1190,6 +1295,7 @@ class _JobFilterBottomSheetState extends State<_JobFilterBottomSheet> {
     JobStatus.inProgress,
     JobStatus.completed,
     JobStatus.approved,
+    JobStatus.cancelled,
   ];
 
   @override
