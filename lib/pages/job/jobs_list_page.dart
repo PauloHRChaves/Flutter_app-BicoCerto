@@ -47,15 +47,6 @@ class _JobsListPageState extends State<JobsListPage> {
   double? _maxBudget;
   String _sortBy = 'recent';
 
-  final List<String> _categoryList = ['Reformas',
-    'Assistência Técnica',
-    'Aulas Particulares',
-    'Design',
-    'Consultoria',
-    'Elétrica',
-    'Faxina',
-    'Pintura'];
-
   @override
   void initState() {
     super.initState();
@@ -275,7 +266,7 @@ class _JobsListPageState extends State<JobsListPage> {
         minBudget: _minBudget,
         maxBudget: _maxBudget,
         sortBy: _sortBy,
-        categories: _categoryList,
+        categories: Job.categoryList,
         onApply: (category, minBudget, maxBudget, sortBy) {
           setState(() {
             _selectedCategory = category;

@@ -55,17 +55,6 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   String _jobSortBy = 'recent';
   Set<JobStatus> _selectedJobStatuses = {JobStatus.open, JobStatus.inProgress, JobStatus.completed};
 
-  final List<String> _categoryList = [
-    'Reformas',
-    'Assistência Técnica',
-    'Aulas Particulares',
-    'Design',
-    'Consultoria',
-    'Elétrica',
-    'Faxina',
-    'Pintura'
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -403,7 +392,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         minProposalCount: _minProposalCount,
         maxProposalCount: _maxProposalCount,
         sortBy: _jobSortBy,
-        categories: _categoryList,
+        categories: Job.categoryList,
         onApply: (statuses, category, minBudget, maxBudget, minProposals, maxProposals, sortBy) {
           setState(() {
             _selectedJobStatuses = statuses;

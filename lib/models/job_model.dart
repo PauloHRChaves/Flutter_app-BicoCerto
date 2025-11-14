@@ -175,6 +175,18 @@ class Job {
     return dates.first;
   }
 
+  static final List<String> categoryList = [
+    'Encanador',
+    'Pedreiro',
+    'Elétrica',
+    'Faxina',
+    'Montador',
+    'Pintura',
+    'Manicure',
+    'Jardineiro',
+    'Marceneiro'
+  ];
+
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
