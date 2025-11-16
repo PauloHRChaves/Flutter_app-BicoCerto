@@ -245,6 +245,7 @@ class JobData {
   final String deadline;
   final Employer employer;
   final String createdAt;
+  final List<String>? jobImages;
 
   JobData({
     required this.title,
@@ -255,6 +256,7 @@ class JobData {
     required this.deadline,
     required this.employer,
     required this.createdAt,
+    this.jobImages,
   });
 
   factory JobData.fromJson(Map<String, dynamic> json) {
@@ -267,6 +269,9 @@ class JobData {
       deadline: json['deadline']?.toString() ?? '',
       employer: Employer.fromJson(json['employer'] ?? {}),
       createdAt: json['created_at']?.toString() ?? '',
+      jobImages: json['job_images'] != null
+          ? List<String>.from(json['job_images'])
+          : null,
     );
   }
 

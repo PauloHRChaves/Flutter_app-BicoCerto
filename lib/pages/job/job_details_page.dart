@@ -150,6 +150,8 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   bool _isCheckingOwner = true;
   bool _isProvider = false;
   late Job _currentJob;
+  Map<String, String> _loadedImages = {}; // CID -> base64
+  bool _isLoadingImages = false;
 
   @override
   void initState() {
@@ -162,7 +164,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
     _jobStateService.setCurrentJob(_currentJob.jobId);
     _connectWebSocket();
-
+    _loadJobImages();
   }
 
   @override
@@ -170,6 +172,34 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     _jobStateService.clearCurrentJob();
     _websocketChannel?.sink.close();
     super.dispose();
+  }
+
+  Future<void> _loadJobImages() async {
+    final imageCids = _currentJob.metadata.data.jobImages;
+
+    if (imageCids == null || imageCids.isEmpty) {
+      return;
+    }
+
+    setState(() => _isLoadingImages = true);
+
+    for (String cid in imageCids) {
+      try {
+        final imageBase64 = await _jobService.getJobImage(_currentJob.jobId, cid);
+
+        if (imageBase64 != null && mounted) {
+          setState(() {
+            _loadedImages[cid] = imageBase64;
+          });
+        }
+      } catch (e) {
+        print('Erro ao carregar imagem $cid: $e');
+      }
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingImages = false);
+    }
   }
 
   Future<void> _connectWebSocket() async {
@@ -729,6 +759,11 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                     const SizedBox(height: AppDimensions.spacingLarge),
                   ],
                   _DescriptionSection(description: _currentJob.metadata.data.description),
+                  const SizedBox(height: AppDimensions.spacingLarge),
+                  _JobImagesSection(
+                    loadedImages: _loadedImages,
+                    isLoading: _isLoadingImages,
+                  ),
                   const SizedBox(height: AppDimensions.spacingLarge),
                   _InformationSection(job: _currentJob),
                   const SizedBox(height: AppDimensions.spacingLarge),
@@ -4021,6 +4056,130 @@ class _RejectJobDialogState extends State<_RejectJobDialog> {
           child: const Text('Confirmar Rejeição'),
         ),
       ],
+    );
+  }
+}
+
+class _JobImagesSection extends StatelessWidget {
+  final Map<String, String> loadedImages;
+  final bool isLoading;
+
+  const _JobImagesSection({
+    required this.loadedImages,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading && loadedImages.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(icon: Icons.photo_library, title: 'Fotos do Serviço'),
+          const SizedBox(height: AppDimensions.spacing),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLarge),
+        ],
+      );
+    }
+
+    if (loadedImages.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(icon: Icons.photo_library, title: 'Fotos do Serviço'),
+        const SizedBox(height: AppDimensions.spacing),
+
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: loadedImages.length,
+            itemBuilder: (context, index) {
+              final cid = loadedImages.keys.elementAt(index);
+              final base64Image = loadedImages[cid]!;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () => _showImageDialog(context, base64Image, index),
+                  child: Hero(
+                    tag: 'job_image_$cid',
+                    child: Container(
+                      width: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                        border: Border.all(color: Colors.grey[300]!),
+                        image: DecorationImage(
+                          image: MemoryImage(base64Decode(base64Image)),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: AppDimensions.spacingLarge),
+      ],
+    );
+  }
+
+  void _showImageDialog(BuildContext context, String base64Image, int initialIndex) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: InteractiveViewer(
+                  child: Image.memory(
+                    base64Decode(base64Image),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Positioned(
+              child: FloatingActionButton(
+                onPressed: () => Navigator.pop(context),
+                backgroundColor: Colors.white,
+                child: const Icon(Icons.close, color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
