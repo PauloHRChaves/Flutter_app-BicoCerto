@@ -1854,7 +1854,7 @@ class _DeadlineDetail extends StatelessWidget {
   }
 }
 
-class _ClientSection extends StatelessWidget {
+class _ClientSection extends StatefulWidget {
   final Job job;
   final bool isLoadingChat;
   final VoidCallback onChatPressed;
@@ -1866,99 +1866,10 @@ class _ClientSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionTitle(icon: Icons.person, title: 'Cliente'),
-        const SizedBox(height: AppDimensions.spacing),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-            border: Border.all(color: Colors.blue[200]!),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  UserAvatar(
-                    userId: job.metadata.data.employer.userId,
-                    userName: job.metadata.data.employer.name,
-                    radius: AppDimensions.avatarRadius,
-                    backgroundColor: Colors.blue[700]!,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          job.metadata.data.employer.name ?? 'Cliente',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Membro desde ${DateFormatters.formatDate(job.metadata.data.createdAt)}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: isLoadingChat ? null : onChatPressed,
-                  icon: isLoadingChat
-                      ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Icon(Icons.chat_bubble_outline),
-                  label: Text(isLoadingChat ? 'Iniciando...' : 'Conversar com Cliente'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(color: Colors.blue[700]!, width: 2),
-                    foregroundColor: Colors.blue[700],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  State<_ClientSection> createState() => _ClientSectionState();
 }
 
-class _ProviderSection extends StatefulWidget {
-  final Job job;
-  final bool isLoadingChat;
-  final VoidCallback onChatPressed;
-
-  const _ProviderSection({
-    required this.job,
-    required this.isLoadingChat,
-    required this.onChatPressed,
-  });
-
-  @override
-  State<_ProviderSection> createState() => _ProviderSectionState();
-}
-
-class _ProviderSectionState extends State<_ProviderSection> {
+class _ClientSectionState extends State<_ClientSection> {
   final JobService _jobService = JobService();
   Map<String, dynamic>? _reputation;
   bool _isLoadingReputation = true;
@@ -1966,14 +1877,14 @@ class _ProviderSectionState extends State<_ProviderSection> {
   @override
   void initState() {
     super.initState();
-    _loadProviderReputation();
+    _loadClientReputation();
   }
 
-  Future<void> _loadProviderReputation() async {
+  Future<void> _loadClientReputation() async {
     setState(() => _isLoadingReputation = true);
 
     try {
-      final result = await _jobService.getUserReputation(widget.job.providerAddress);
+      final result = await _jobService.getUserReputation(widget.job.client, true);
 
       if (mounted && result['success'] == true) {
         setState(() {
@@ -2014,20 +1925,20 @@ class _ProviderSectionState extends State<_ProviderSection> {
 
   double _calculateStarRating(int? reputationScore) {
     if (reputationScore == null) return 0.0;
-    final stars = (reputationScore / 1000.0) * 5.0;
+    final stars = (reputationScore / 100.0);
     return stars.clamp(0.0, 5.0);
   }
 
   Color _getReputationColor(int? reputationScore) {
     if (reputationScore == null || reputationScore == 0) {
       return Colors.grey;
-    } else if (reputationScore < 200) {
+    } else if (reputationScore < 100) {
       return Colors.red[700]!;
-    } else if (reputationScore < 400) {
+    } else if (reputationScore < 200) {
       return Colors.orange[700]!;
-    } else if (reputationScore < 600) {
+    } else if (reputationScore < 300) {
       return Colors.yellow[700]!;
-    } else if (reputationScore < 800) {
+    } else if (reputationScore < 400) {
       return Colors.lightGreen[700]!;
     } else {
       return Colors.green[700]!;
@@ -2037,13 +1948,357 @@ class _ProviderSectionState extends State<_ProviderSection> {
   String _getReputationText(int? reputationScore) {
     if (reputationScore == null || reputationScore == 0) {
       return 'Sem avaliações';
-    } else if (reputationScore < 200) {
+    } else if (reputationScore <= 100) {
       return 'Iniciante';
-    } else if (reputationScore < 400) {
+    } else if (reputationScore <= 200) {
       return 'Regular';
-    } else if (reputationScore < 600) {
+    } else if (reputationScore <= 300) {
       return 'Bom';
-    } else if (reputationScore < 800) {
+    } else if (reputationScore <= 400) {
+      return 'Muito Bom';
+    } else {
+      return 'Excelente';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(icon: Icons.person, title: 'Cliente'),
+        const SizedBox(height: AppDimensions.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  UserAvatar(
+                    userId: widget.job.metadata.data.employer.userId,
+                    userName: widget.job.metadata.data.employer.name,
+                    radius: AppDimensions.avatarRadius,
+                    backgroundColor: Colors.blue[700]!,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.job.metadata.data.employer.name ?? 'Cliente',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.business_center,
+                              size: 14,
+                              color: Colors.blue[700],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Contratante',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              if (_isLoadingReputation)
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (_reputation != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[100]!),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ClientStatItem(
+                              label: 'Jobs Concluidos',
+                              value: '${_reputation!['totalJobs'] ?? 0}',
+                              color: Colors.blue[700]!,
+                              icon: Icons.work_outline,
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 60,
+                            color: Colors.grey[300],
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.star,
+                                  color: Colors.amber[700],
+                                  size: 24,
+                                ),
+                                const SizedBox(height: 4),
+                                _StarRating(
+                                  rating: _calculateStarRating(_reputation!['averageRating']),
+                                  size: 14,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _getReputationText(_reputation!['averageRating']),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getReputationColor(_reputation!['averageRating']),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(height: 1, color: Colors.grey[300]),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Colors.blue[700],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Membro há ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          Text(
+                            _getAccountAge(_reputation!['joinedAt']),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: widget.isLoadingChat ? null : widget.onChatPressed,
+                  icon: widget.isLoadingChat
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Icon(Icons.chat_bubble_outline),
+                  label: Text(widget.isLoadingChat ? 'Iniciando...' : 'Conversar com Cliente'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: Colors.blue[700]!, width: 2),
+                    foregroundColor: Colors.blue[700],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _calculateApprovalRate() {
+    if (_reputation == null) return '0';
+
+    final jobsCreated = _reputation!['jobsCreated'] ?? 0;
+    final approvedJobs = _reputation!['approvedJobs'] ?? 0;
+
+    if (jobsCreated == 0) return '0';
+
+    final rate = (approvedJobs / jobsCreated) * 100;
+    return rate.toStringAsFixed(0);
+  }
+}
+
+class _ClientStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _ClientStatItem({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _ProviderSection extends StatefulWidget {
+  final Job job;
+  final bool isLoadingChat;
+  final VoidCallback onChatPressed;
+
+  const _ProviderSection({
+    required this.job,
+    required this.isLoadingChat,
+    required this.onChatPressed,
+  });
+
+  @override
+  State<_ProviderSection> createState() => _ProviderSectionState();
+}
+
+class _ProviderSectionState extends State<_ProviderSection> {
+  final JobService _jobService = JobService();
+  Map<String, dynamic>? _reputation;
+  bool _isLoadingReputation = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProviderReputation();
+  }
+
+  Future<void> _loadProviderReputation() async {
+    setState(() => _isLoadingReputation = true);
+
+    try {
+      final result = await _jobService.getUserReputation(widget.job.providerAddress, false);
+
+      if (mounted && result['success'] == true) {
+        setState(() {
+          _reputation = result['reputation'];
+          _isLoadingReputation = false;
+        });
+      } else {
+        setState(() => _isLoadingReputation = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingReputation = false);
+      }
+    }
+  }
+
+  String _getAccountAge(int? timestamp) {
+    if (timestamp == null || timestamp == 0) return 'Recente';
+
+    try {
+      final joinedDate = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+      final now = DateTime.now();
+      final difference = now.difference(joinedDate);
+
+      if (difference.inDays < 30) {
+        return '${difference.inDays} ${difference.inDays == 1 ? 'dia' : 'dias'}';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return '${months} ${months == 1 ? 'mês' : 'meses'}';
+      } else {
+        final years = (difference.inDays / 365).floor();
+        return '${years} ${years == 1 ? 'ano' : 'anos'}';
+      }
+    } catch (e) {
+      return 'N/A';
+    }
+  }
+
+  double _calculateStarRating(int? reputationScore) {
+    if (reputationScore == null) return 0.0;
+    final stars = (reputationScore / 100.0);
+    return stars.clamp(0.0, 5.0);
+  }
+
+  Color _getReputationColor(int? reputationScore) {
+    if (reputationScore == null || reputationScore == 0) {
+      return Colors.grey;
+    } else if (reputationScore < 100) {
+      return Colors.red[700]!;
+    } else if (reputationScore < 200) {
+      return Colors.orange[700]!;
+    } else if (reputationScore < 300) {
+      return Colors.yellow[700]!;
+    } else if (reputationScore < 400) {
+      return Colors.lightGreen[700]!;
+    } else {
+      return Colors.green[700]!;
+    }
+  }
+
+  String _getReputationText(int? reputationScore) {
+    if (reputationScore == null || reputationScore == 0) {
+      return 'Sem avaliações';
+    } else if (reputationScore < 100) {
+      return 'Iniciante';
+    } else if (reputationScore < 200) {
+      return 'Regular';
+    } else if (reputationScore < 300) {
+      return 'Bom';
+    } else if (reputationScore < 400) {
       return 'Muito Bom';
     } else {
       return 'Excelente';
@@ -2134,7 +2389,7 @@ class _ProviderSectionState extends State<_ProviderSection> {
                           Expanded(
                             child: _ProviderStatItem(
                               label: 'Serviços Concluídos',
-                              value: '${_reputation!['successfulJobs'] ?? 0}',
+                              value: '${_reputation!['totalJobs'] ?? 0}',
                               color: Colors.green[700]!,
                             ),
                           ),
@@ -2153,16 +2408,16 @@ class _ProviderSectionState extends State<_ProviderSection> {
                                 ),
                                 const SizedBox(height: 4),
                                 _StarRating(
-                                  rating: _calculateStarRating(_reputation!['reputationScore']),
+                                  rating: _calculateStarRating(_reputation!['averageRating']),
                                   size: 14,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _getReputationText(_reputation!['reputationScore']),
+                                  _getReputationText(_reputation!['averageRating']),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: _getReputationColor(_reputation!['reputationScore']),
+                                    color: _getReputationColor(_reputation!['averageRating']),
                                   ),
                                 ),
                               ],

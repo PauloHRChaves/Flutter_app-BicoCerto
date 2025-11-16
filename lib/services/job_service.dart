@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import 'package:bico_certo/models/job_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,12 +21,12 @@ class JobService {
     };
   }
 
-  Future<Map<String, dynamic>> getUserReputation(String address) async {
+  Future<Map<String, dynamic>> getUserReputation(String address, bool client) async {
     try {
       final headers = await _getHeaders();
 
       final response = await http.get(
-        Uri.parse('$baseUrl/jobs/reputation?address=$address'),
+        Uri.parse('$baseUrl/jobs/reputation?address=$address&client=$client'),
         headers: headers,
       );
 
