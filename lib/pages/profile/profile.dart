@@ -27,9 +27,9 @@ void _handleLogout(BuildContext context) async {
 
 class _SetProfileState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
-  
+
   List<Map<String, dynamic>> _transactions = [];
-  
+
   bool _isLoading = true;
   String _errorMessage = '';
 
@@ -46,7 +46,7 @@ class _SetProfileState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadAllData(); 
+    _loadAllData();
   }
 
   void _loadAllData() async {
@@ -62,21 +62,19 @@ class _SetProfileState extends State<ProfilePage> {
       final userData = await _authService.getUserProfile();
       if (!mounted) return;
 
-      
       final userProfile = userData['user'];
 
       if (userProfile == null) {
         throw Exception("Objeto 'user' não encontrado na resposta da API.");
       }
 
-    
       setState(() {
         _fullName = userProfile['full_name'] ?? 'Usuário';
-        _city = userProfile['city'] ?? 'Cidade'; 
-        _state = userProfile['state'] ?? ''; 
+        _city = userProfile['city'] ?? 'Cidade';
+        _state = userProfile['state'] ?? '';
         _description = userProfile['description'] ?? 'Sem descrição.';
         _id = userProfile['id'] ?? '';
-        
+
         if (userProfile['profile_pic_url'] != null) {
           _imgUrl = userProfile['profile_pic_url'];
         }
@@ -84,11 +82,11 @@ class _SetProfileState extends State<ProfilePage> {
     } catch (e) {
       profileError = 'Falha grave ao carregar o seu perfil.';
     }
-    
+
     if (!mounted) return;
     setState(() {
       _isLoading = false;
-      
+
       if (profileError != null) {
         _errorMessage = profileError;
         _fullName = 'Erro';
@@ -96,9 +94,7 @@ class _SetProfileState extends State<ProfilePage> {
     });
   }
 
-  
   void _checkAndNavigateToWallet() async {
-    
     final details = await _authService.getWalletDetails();
 
     final bool walletExists =
@@ -106,14 +102,14 @@ class _SetProfileState extends State<ProfilePage> {
 
     if (mounted) {
       if (walletExists) {
-        
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (context) => const WalletPage()));
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const WalletPage()));
       } else {
-        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Carteira não encontrada. Por favor, crie uma.')),
+            content: Text('Carteira não encontrada. Por favor, crie uma.'),
+          ),
         );
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const CreateWalletPage()),
@@ -128,7 +124,6 @@ class _SetProfileState extends State<ProfilePage> {
     required String label,
     VoidCallback? onTap,
   }) {
-
     const Color primaryBlue = Color.fromARGB(255, 25, 116, 172);
     const Color activeBlue = Color.fromARGB(255, 5, 84, 130);
 
@@ -204,288 +199,291 @@ class _SetProfileState extends State<ProfilePage> {
 
     return AuthGuard(
       child: Scaffold(
-      backgroundColor: lightBackground,
-      appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 15, 73, 131),
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-              color: Color.fromARGB(255, 255, 255, 255)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          "Meu Perfil",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline, color: Colors.white),
-            tooltip: 'Ajuda',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const ProfileTutorialModal(),
-              );
-            },
-          ),
-          IconButton(
-            
+        backgroundColor: lightBackground,
+        appBar: AppBar(
+          backgroundColor: Color.fromARGB(255, 15, 73, 131),
+          elevation: 1,
+          leading: IconButton(
             icon: const Icon(
-              Icons.edit_outlined, 
-              color: Colors.white,
+              Icons.arrow_back_ios,
+              color: Color.fromARGB(255, 255, 255, 255),
             ),
-            tooltip: 'Editar Perfil',
-            onPressed: () async {
-              
-              final result = await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => EditProfilePage(
-                
-                    currentName: _fullName,
-                    currentCity: _city,
-                    currentState: _state,
-                    currentDescription: _description,
-                    currentPicUrl: _imgUrl,
-                    userId: _id,
-                  ),
-                ),
-              );
-
-              
-              if (result == true && mounted) {
-                _loadAllData();
-              }
-            },
+            onPressed: () => Navigator.of(context).pop(),
           ),
-        ],
-      ),
-      
-      
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      _errorMessage,
-                      style: TextStyle(color: Colors.red, fontSize: 16),
-                      textAlign: TextAlign.center,
+          title: const Text(
+            "Meu Perfil",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline, color: Colors.white),
+              tooltip: 'Ajuda',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const ProfileTutorialModal(),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              tooltip: 'Editar Perfil',
+              onPressed: () async {
+                final result = await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EditProfilePage(
+                      currentName: _fullName,
+                      currentCity: _city,
+                      currentState: _state,
+                      currentDescription: _description,
+                      currentPicUrl: _imgUrl,
+                      userId: _id,
                     ),
                   ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  children: [
-                    SizedBox(height: screenHeight * 0.01),
+                );
 
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => _handleLogout(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(255, 105, 192, 254),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                if (result == true && mounted) {
+                  _loadAllData();
+                }
+              },
+            ),
+          ],
+        ),
+
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage.isNotEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    _errorMessage,
+                    style: TextStyle(color: Colors.red, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.only(bottom: 10),
+                children: [
+                  SizedBox(height: screenHeight * 0.01),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Imagem do usuário
+                        Container(
+                          width: avatarSize,
+                          height: avatarSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: primaryBlue, width: 3),
+                            color: Colors.black,
+                            image: DecorationImage(
+                              image: NetworkImage(_imgUrl),
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
                             ),
                           ),
-                          child: const Text(
-                            "LOGOUT",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+
+                        Text(
+                          _fullName, // Variável de state
+                          style: TextStyle(
+                            fontSize: fonttitle,
+                            fontWeight: FontWeight.bold,
+                            color: darkText,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+
+                        // city + state
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _city,
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: font,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
+                            Text(
+                              ' - ',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: font,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              _state,
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: font,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+
+                        Container(
+                          padding: EdgeInsets.all(15),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: lightBackground,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+
+                          child: Text(
+                            _description,
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                              color: darkText,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: screenHeight * 0.005),
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildActionButton(
+                          context: context,
+                          icon: Icons.account_balance_wallet_outlined,
+                          label: "Carteira",
+                          onTap: _checkAndNavigateToWallet,
+                        ),
+                        _buildActionButton(
+                          context: context,
+                          icon: Icons.dashboard_outlined, // Ícone de Dashboard
+                          label: "Dash Cliente",
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ClientDashboardPage(),
+                            ),
+                          ),
+                        ),
+                        _buildActionButton(
+                          context: context,
+                          icon: Icons.dashboard, // Ícone de Engrenagem
+                          label: "Dash Provedor",
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ProviderDashboardPage(),
+                            ),
+                          ),
+                        ),
+                        _buildActionButton(
+                          context: context,
+                          icon: Icons.work_outline,
+                          label: "Jobs",
+                          onTap: () {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              AppRoutes.ordersPage,
+                              (route) => route.isFirst,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: screenHeight * 0.02),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 30),
+                    width: double.infinity,
+                    alignment: Alignment.centerLeft,
+                    child: const Text(
+                      "Deseja sair da conta?",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color.fromARGB(221, 36, 36, 36),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.05,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _handleLogout(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            250,
+                            59,
+                            59,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          "LOGOUT",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    
-                    SizedBox(height: screenHeight * 0.01),
-                    
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Imagem do usuário
-                          Container(
-                            width: avatarSize,
-                            height: avatarSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: primaryBlue, width: 3),
-                              color: Colors.black,
-                              image: DecorationImage(
-                                
-                                image: NetworkImage(_imgUrl),
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: screenHeight * 0.01),
-
-                          
-                          Text(
-                            _fullName, // Variável de state
-                            style: TextStyle(
-                              fontSize: fonttitle,
-                              fontWeight: FontWeight.bold,
-                              color: darkText,
-                            ),
-                          ),
-                          SizedBox(height: screenHeight * 0.01),
-
-                          // city + state
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                
-                                _city,
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: font,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                ' - ',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: font,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                
-                                _state,
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: font,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: screenHeight * 0.01),
-
-                          
-                          Container(
-                            padding: EdgeInsets.all(15),
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: lightBackground,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-
-                            
-                            child: Text(
-                              
-                              _description,
-                              textAlign: TextAlign.start,
-                              style: TextStyle(
-                                color: darkText,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    SizedBox(height: screenHeight * 0.005),
-                    Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildActionButton(
-                              context: context,
-                              icon: Icons.account_balance_wallet_outlined,
-                              label: "Carteira",
-                              onTap: _checkAndNavigateToWallet),
-                          _buildActionButton(
-                            context: context,
-                            icon: Icons.dashboard_outlined, // Ícone de Dashboard
-                            label: "Dash Cliente",
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ClientDashboardPage(), 
-                              ),
-                            ),
-                          ),
-                          _buildActionButton(
-                            context: context,
-                            icon: Icons.dashboard, // Ícone de Engrenagem
-                            label: "Dash Provedor",
-                              onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                    const ProviderDashboardPage(),
-                                  ),
-                                ),
-                          ),
-                          _buildActionButton(
-                            context: context,
-                            icon: Icons.work_outline, 
-                            label: "Jobs",
-                            onTap: () {                        
-                              Navigator.pushNamedAndRemoveUntil(
-                                context,
-                                AppRoutes.ordersPage,
-                                (route) => route.isFirst,
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),     
-      bottomNavigationBar: CustomBottomNavBar(
-        
-        currentIndex: 3,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.sessionCheck,
-              (route) => route.isFirst,
-            );
-          } else if (index == 1) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.ordersPage,
-              (route) => route.isFirst,
-            );
-          } else if (index == 2) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.chatRoomsPage,
-              (route) => route.isFirst,
-            );
-          } else if (index == 3) {
-           
-          }
-        },
+                  ),
+                ],
+              ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 3,
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.sessionCheck,
+                (route) => route.isFirst,
+              );
+            } else if (index == 1) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.ordersPage,
+                (route) => route.isFirst,
+              );
+            } else if (index == 2) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.chatRoomsPage,
+                (route) => route.isFirst,
+              );
+            } else if (index == 3) {}
+          },
+        ),
       ),
-    ));
+    );
   }
 }
