@@ -1,3 +1,5 @@
+// job_proposals_page.dart - SUBSTITUIR O ARQUIVO INTEIRO
+
 import 'package:bico_certo/utils/string_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:bico_certo/models/job_model.dart';
@@ -386,7 +388,8 @@ class _JobProposalsPageState extends State<JobProposalsPage> {
   }
 }
 
-class ProposalCard extends StatelessWidget {
+// ✅ NOVO ProposalCard com Reputação
+class ProposalCard extends StatefulWidget {
   final Map<String, dynamic> proposal;
   final VoidCallback onAccept;
   final VoidCallback onReject;
@@ -399,8 +402,113 @@ class ProposalCard extends StatelessWidget {
   });
 
   @override
+  State<ProposalCard> createState() => _ProposalCardState();
+}
+
+class _ProposalCardState extends State<ProposalCard> {
+  final JobService _jobService = JobService();
+  Map<String, dynamic>? _reputation;
+  bool _isLoadingReputation = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProviderReputation();
+  }
+
+  Future<void> _loadProviderReputation() async {
+    setState(() => _isLoadingReputation = true);
+
+    try {
+      final metadata = widget.proposal['metadata'];
+      final providerData = metadata?['data']?['provider'];
+      final providerAddress = providerData?['address'];
+
+      if (providerAddress == null) {
+        setState(() => _isLoadingReputation = false);
+        return;
+      }
+
+      final result = await _jobService.getUserReputation(providerAddress, false);
+
+      if (mounted && result['success'] == true) {
+        setState(() {
+          _reputation = result['reputation'];
+          _isLoadingReputation = false;
+        });
+      } else {
+        setState(() => _isLoadingReputation = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingReputation = false);
+      }
+    }
+  }
+
+  String _getAccountAge(int? timestamp) {
+    if (timestamp == null || timestamp == 0) return 'Recente';
+
+    try {
+      final joinedDate = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+      final now = DateTime.now();
+      final difference = now.difference(joinedDate);
+
+      if (difference.inDays < 30) {
+        return '${difference.inDays} ${difference.inDays == 1 ? 'dia' : 'dias'}';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return '${months} ${months == 1 ? 'mês' : 'meses'}';
+      } else {
+        final years = (difference.inDays / 365).floor();
+        return '${years} ${years == 1 ? 'ano' : 'anos'}';
+      }
+    } catch (e) {
+      return 'N/A';
+    }
+  }
+
+  double _calculateStarRating(int? reputationScore) {
+    if (reputationScore == null) return 0.0;
+    final stars = (reputationScore / 100.0);
+    return stars.clamp(0.0, 5.0);
+  }
+
+  Color _getReputationColor(int? reputationScore) {
+    if (reputationScore == null || reputationScore == 0) {
+      return Colors.grey;
+    } else if (reputationScore < 100) {
+      return Colors.red[700]!;
+    } else if (reputationScore < 200) {
+      return Colors.orange[700]!;
+    } else if (reputationScore < 300) {
+      return Colors.yellow[700]!;
+    } else if (reputationScore < 400) {
+      return Colors.lightGreen[700]!;
+    } else {
+      return Colors.green[700]!;
+    }
+  }
+
+  String _getReputationText(int? reputationScore) {
+    if (reputationScore == null || reputationScore == 0) {
+      return 'Sem avaliações';
+    } else if (reputationScore < 100) {
+      return 'Iniciante';
+    } else if (reputationScore < 200) {
+      return 'Regular';
+    } else if (reputationScore < 300) {
+      return 'Bom';
+    } else if (reputationScore < 400) {
+      return 'Muito Bom';
+    } else {
+      return 'Excelente';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final metadata = proposal['metadata'];
+    final metadata = widget.proposal['metadata'];
     final providerData = metadata != null ? metadata['data']['provider'] : null;
 
     return Card(
@@ -419,8 +527,8 @@ class ProposalCard extends StatelessWidget {
                 UserAvatar(
                   userId: providerData['user_id'],
                   userName: providerData['name'],
-                  radius: AppDimensions.avatarRadius,
-                  backgroundColor: Colors.blue[700]!,
+                  radius: 30,
+                  backgroundColor: Colors.purple[700]!,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -434,13 +542,127 @@ class ProposalCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.work_outline,
+                            size: 14,
+                            color: Colors.purple[700],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Prestador',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.purple[700],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
 
-            const Divider(height: 24),
+            const SizedBox(height: 16),
+
+            if (_isLoadingReputation)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.0),
+                child: Center(
+                  child: SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_reputation != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.purple[100]!),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ProviderStatItem(
+                            label: 'Serviços',
+                            value: '${_reputation!['totalJobs'] ?? 0}',
+                            color: Colors.green[700]!,
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 50,
+                          color: Colors.grey[300],
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _StarRating(
+                                rating: _calculateStarRating(_reputation!['averageRating']),
+                                size: 14,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _getReputationText(_reputation!['averageRating']),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getReputationColor(_reputation!['averageRating']),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 50,
+                          color: Colors.grey[300],
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: Colors.purple[700],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _getAccountAge(_reputation!['joinedAt']),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple[700],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              Text(
+                                'Membro',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+            const Divider(height: 32),
 
             if (metadata != null && metadata['data']['description'] != null) ...[
               const Text(
@@ -461,6 +683,7 @@ class ProposalCard extends StatelessWidget {
               const SizedBox(height: 16),
             ],
 
+            // Valor e Prazo
             Row(
               children: [
                 Expanded(
@@ -483,7 +706,7 @@ class ProposalCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'R\$ ${StringFormatter.formatAmount(proposal['amount'])}',
+                          'R\$ ${StringFormatter.formatAmount(widget.proposal['amount'])}',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -515,7 +738,7 @@ class ProposalCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${proposal['estimated_time_days']} dias',
+                          '${widget.proposal['estimated_time_days']} dias',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -536,7 +759,7 @@ class ProposalCard extends StatelessWidget {
                 Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 4),
                 Text(
-                  'Enviada em: ${_formatDate(proposal['created_at'])}',
+                  'Enviada em: ${_formatDate(widget.proposal['created_at'])}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -548,7 +771,7 @@ class ProposalCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onReject,
+                    onPressed: widget.onReject,
                     icon: const Icon(Icons.close),
                     label: const Text('Rejeitar'),
                     style: OutlinedButton.styleFrom(
@@ -565,9 +788,9 @@ class ProposalCard extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: onAccept,
+                    onPressed: widget.onAccept,
                     icon: const Icon(Icons.check),
-                    label: const Text('Aceitar Proposta'),
+                    label: const Text('Aceitar'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -594,5 +817,79 @@ class ProposalCard extends StatelessWidget {
     } catch (e) {
       return dateString.toString();
     }
+  }
+}
+
+class _ProviderStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _ProviderStatItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StarRating extends StatelessWidget {
+  final double rating;
+  final double size;
+
+  const _StarRating({
+    required this.rating,
+    this.size = 16,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < rating.floor()) {
+          return Icon(
+            Icons.star,
+            size: size,
+            color: Colors.amber[700],
+          );
+        } else if (index < rating) {
+          return Icon(
+            Icons.star_half,
+            size: size,
+            color: Colors.amber[700],
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            size: size,
+            color: Colors.amber[700],
+          );
+        }
+      }),
+    );
   }
 }
