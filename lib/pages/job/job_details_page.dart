@@ -1678,7 +1678,7 @@ class _InformationSection extends StatelessWidget {
         _InfoRow(
           icon: Icons.schedule,
           label: 'Publicado em',
-          value: DateFormatters.formatDateTime(job.metadata.data.createdAt),
+          value: DateFormatters.formatDateTime(job.createdAt),
           color: Colors.purple,
         ),
         const SizedBox(height: AppDimensions.spacing),
@@ -4114,7 +4114,7 @@ class _JobImagesSection extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(
-                  onTap: () => _showImageDialog(context, base64Image, index),
+                  onTap: () => _showImageDialog(context, base64Image, cid),
                   child: Hero(
                     tag: 'job_image_$cid',
                     child: Container(
@@ -4122,9 +4122,24 @@ class _JobImagesSection extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
                         border: Border.all(color: Colors.grey[300]!),
-                        image: DecorationImage(
-                          image: MemoryImage(base64Decode(base64Image)),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                        child: Image.memory(
+                          base64Decode(base64Image),
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -4140,7 +4155,7 @@ class _JobImagesSection extends StatelessWidget {
     );
   }
 
-  void _showImageDialog(BuildContext context, String base64Image, int initialIndex) {
+  void _showImageDialog(BuildContext context, String base64Image, String cid) {
     showDialog(
       context: context,
       barrierColor: Colors.black87,
@@ -4162,20 +4177,35 @@ class _JobImagesSection extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.5,
+                  maxScale: 4.0,
                   child: Image.memory(
                     base64Decode(base64Image),
                     fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            Positioned(
-              child: FloatingActionButton(
-                onPressed: () => Navigator.pop(context),
-                backgroundColor: Colors.white,
-                child: const Icon(Icons.close, color: Colors.black),
-              ),
+            FloatingActionButton(
+              onPressed: () => Navigator.of(context).pop(),
+              backgroundColor: Colors.white,
+              child: const Icon(Icons.close, color: Colors.black),
             ),
           ],
         ),

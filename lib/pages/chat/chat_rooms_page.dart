@@ -158,8 +158,6 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> with WidgetsBindingOb
                     (route) => route.isFirst,
               );
             } else if (index == 3) {
-              // AppRoutes.profileteste -> pagina de teste
-              // AppRoutes.profilePage   -> pagina de uso
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 AppRoutes.profilePage,

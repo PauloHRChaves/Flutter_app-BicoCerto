@@ -220,7 +220,7 @@ class _JobsListPageState extends State<JobsListPage> {
 
     switch (_sortBy) {
       case 'recent':
-        filtered.sort((a, b) => b.deadline.compareTo(a.deadline));
+        filtered.sort((a, b) => b.lastUpdatedAt.compareTo(a.lastUpdatedAt));
         break;
       case 'budget_asc':
         filtered.sort((a, b) => a.maxBudget.compareTo(b.maxBudget));

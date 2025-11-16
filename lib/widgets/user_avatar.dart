@@ -189,7 +189,6 @@ class _ImagePreviewDialog extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Imagem ou avatar grande
           Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
@@ -197,20 +196,10 @@ class _ImagePreviewDialog extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: userName != null && userName!.isNotEmpty
-                  ? const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              )
-                  : BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: ClipRRect(
-              borderRadius: userName != null && userName!.isNotEmpty
-                  ? const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              )
-                  : BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16),
               child: hasImage
                   ? InteractiveViewer(
                 panEnabled: true,
