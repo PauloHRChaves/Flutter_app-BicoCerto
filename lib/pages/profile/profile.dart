@@ -35,6 +35,7 @@ class _SetProfileState extends State<ProfilePage> {
 
   // Dados do Perfil (do /auth/me)
   String _fullName = '...';
+  String _id = '...';
   String _city = '...';
   String _state = '...';
   String _description = '...';
@@ -74,6 +75,7 @@ class _SetProfileState extends State<ProfilePage> {
         _city = userProfile['city'] ?? 'Cidade'; 
         _state = userProfile['state'] ?? ''; 
         _description = userProfile['description'] ?? 'Sem descrição.';
+        _id = userProfile['id'] ?? '';
         
         if (userProfile['profile_pic_url'] != null) {
           _imgUrl = userProfile['profile_pic_url'];
@@ -246,6 +248,7 @@ class _SetProfileState extends State<ProfilePage> {
                     currentState: _state,
                     currentDescription: _description,
                     currentPicUrl: _imgUrl,
+                    userId: _id,
                   ),
                 ),
               );
