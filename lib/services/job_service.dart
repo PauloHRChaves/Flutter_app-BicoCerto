@@ -50,6 +50,30 @@ class JobService {
     }
   }
 
+  Future<String?> getJobImage(String jobId, String cid) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/jobs/image/$cid'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true && data['data'] != null) {
+          return data['data']['image_base64'] as String?;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('Erro ao buscar imagem do job: $e');
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> approveJob({
     required String jobId,
     required int rating,
