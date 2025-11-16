@@ -13,6 +13,7 @@ import '../../services/job_state_service.dart';
 import '../../utils/string_formatter.dart';
 import '../../widgets/location_navigation_widget.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/user_avatar.dart';
 import '../create/create_form.dart';
 import 'job_proposals_page.dart';
 
@@ -1883,17 +1884,11 @@ class _ClientSection extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
+                  UserAvatar(
+                    userId: job.metadata.data.employer.userId,
+                    userName: job.metadata.data.employer.name,
                     radius: AppDimensions.avatarRadius,
-                    backgroundColor: Colors.blue[700],
-                    child: Text(
-                      job.metadata.data.employer.name?.substring(0, 1).toUpperCase() ?? 'C',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    backgroundColor: Colors.blue[700]!,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -2074,17 +2069,11 @@ class _ProviderSectionState extends State<_ProviderSection> {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
+                  UserAvatar(
+                    userId: widget.job.providerId,
+                    userName: widget.job.providerName,
                     radius: AppDimensions.avatarRadius,
-                    backgroundColor: Colors.purple[700],
-                    child: Text(
-                      widget.job.providerName?.substring(0, 1).toUpperCase() ?? 'P',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    backgroundColor: Colors.purple[700]!,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -2825,9 +2814,6 @@ class _ProposalFormState extends State<_ProposalForm> {
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Por favor, descreva sua proposta';
-        }
-        if (value.length < 20) {
-          return 'A descrição deve ter pelo menos 20 caracteres';
         }
         return null;
       },

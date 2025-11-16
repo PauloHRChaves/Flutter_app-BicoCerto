@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:bico_certo/models/job_model.dart';
 import 'package:bico_certo/services/job_service.dart';
 
+import '../../widgets/user_avatar.dart';
+import 'job_details_page.dart';
+
 class JobProposalsPage extends StatefulWidget {
   final Job job;
 
@@ -413,15 +416,11 @@ class ProposalCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: Colors.blue[700],
-                  child: Text(
-                    providerData?['name']?.substring(0, 1).toUpperCase() ?? 'P',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                UserAvatar(
+                  userId: providerData['user_id'],
+                  userName: providerData['name'],
+                  radius: AppDimensions.avatarRadius,
+                  backgroundColor: Colors.blue[700]!,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

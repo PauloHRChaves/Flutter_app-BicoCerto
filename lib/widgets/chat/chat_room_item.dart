@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../controllers/chat_rooms_controller.dart';
+import '../../pages/job/job_details_page.dart';
+import '../user_avatar.dart';
 
 class ChatRoomItem extends StatelessWidget {
   final Map<String, dynamic> room;
@@ -27,7 +29,7 @@ class ChatRoomItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: hasUnread ? 2 : 1,
       child: ListTile(
-        leading: _buildAvatar(otherUserName, isActive),
+        leading: _buildAvatar(otherUser!, isActive),
         title: _buildTitle(jobTitle, hasUnread, unreadCount),
         subtitle: _buildSubtitle(otherUserName, senderName, lastMessageText, hasUnread),
         trailing: Icon(
@@ -39,18 +41,14 @@ class ChatRoomItem extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(String otherUserName, bool isActive) {
+  Widget _buildAvatar(Map<String, dynamic> otherUser, bool isActive) {
     return Stack(
       children: [
-        CircleAvatar(
-          backgroundColor: Colors.blue.shade100,
-          child: Text(
-            otherUserName[0].toUpperCase(),
-            style: TextStyle(
-              color: Colors.blue.shade700,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        UserAvatar(
+          userId: otherUser['id'],
+          userName: otherUser['name'],
+          radius: AppDimensions.avatarRadius,
+          backgroundColor: Colors.blue[700]!,
         ),
         if (!isActive)
           Positioned(
